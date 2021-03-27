@@ -83,7 +83,6 @@ typedef struct packed {
     logic load_regfile;
     logic data_mem_read;
 	logic data_mem_write;
-	logic [3:0] mem_byte_enable;
 } rv32i_control_word;
 
 typedef struct packed {

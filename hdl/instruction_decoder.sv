@@ -6,32 +6,22 @@ module instruction_decoder
     input rst,
     input load,
     input [31:0] in,
-    output [2:0] funct3,
-    output [6:0] funct7,
-    output rv32i_opcode opcode,
-    output [31:0] i_imm,
-    output [31:0] s_imm,
-    output [31:0] b_imm,
-    output [31:0] u_imm,
-    output [31:0] j_imm,
-    output [4:0] rs1,
-    output [4:0] rs2,
-    output [4:0] rd
+    output instruction_decoded out
 );
 
 logic [31:0] data;
 
-assign funct3 = data[14:12];
-assign funct7 = data[31:25];
-assign opcode = rv32i_opcode'(data[6:0]);
-assign i_imm = {{21{data[31]}}, data[30:20]};
-assign s_imm = {{21{data[31]}}, data[30:25], data[11:7]};
-assign b_imm = {{20{data[31]}}, data[7], data[30:25], data[11:8], 1'b0};
-assign u_imm = {data[31:12], 12'h000};
-assign j_imm = {{12{data[31]}}, data[19:12], data[20], data[30:21], 1'b0};
-assign rs1 = data[19:15];
-assign rs2 = data[24:20];
-assign rd = data[11:7];
+assign out.funct3 = data[14:12];
+assign out.funct7 = data[31:25];
+assign out.opcode = rv32i_opcode'(data[6:0]);
+assign out.i_imm = {{21{data[31]}}, data[30:20]};
+assign out.s_imm = {{21{data[31]}}, data[30:25], data[11:7]};
+assign out.b_imm = {{20{data[31]}}, data[7], data[30:25], data[11:8], 1'b0};
+assign out.u_imm = {data[31:12], 12'h000};
+assign out.j_imm = {{12{data[31]}}, data[19:12], data[20], data[30:21], 1'b0};
+assign out.rs1 = data[19:15];
+assign out.rs2 = data[24:20];
+assign out.rd = data[11:7];
 
 
 always_comb
