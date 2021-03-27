@@ -97,7 +97,7 @@ typedef struct packed {
     logic [4:0] rs1;
     logic [4:0] rs2;
     logic [4:0] rd;
-} instruction_decoded;
+} instruction_decoded_t;
 
 
 endpackage : rv32i_types

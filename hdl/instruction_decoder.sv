@@ -6,7 +6,7 @@ module instruction_decoder
     input rst,
     input load,
     input [31:0] in,
-    output instruction_decoded out
+    output instruction_decoded_t out
 );
 
 logic [31:0] data;
