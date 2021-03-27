@@ -2,9 +2,6 @@ import rv32i_types::*;
 
 module instruction_decoder
 (
-    input clk,
-    input rst,
-    input load,
     input [31:0] in,
     output instruction_decoded_t out
 );
