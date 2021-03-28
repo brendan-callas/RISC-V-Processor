@@ -105,7 +105,19 @@ Burst Memory Ports:
 Please refer to tb_itf.sv for more information.
 */
 
-mp4 dut();
+mp4 dut(
+
+	.clk(itf.clk),
+	.rst(itf.rst),
+	
+	.pmem_mem_read(itf.mem_read),
+	.pmem_mem_write(itf.mem_write),
+	.pmem_mem_wdata(itf.mem_wdata),
+	.pmem_mem_rdata(itf.mem_rdata),
+	.pmem_mem_addr(itf.mem_addr),
+	.pmem_mem_resp(itf.mem_resp)
+
+);
 /***************************** End Instantiation *****************************/
 
 endmodule
