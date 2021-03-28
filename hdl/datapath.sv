@@ -17,6 +17,8 @@ module datapath
     output rv32i_word data_mem_wdata
 );
 
+
+
 // Internal Signals
 
 // Outputs of IF/ID Stage
@@ -92,7 +94,12 @@ rv32i_word data_out_h;
 logic [3:0] data_out_mask_b;
 logic [3:0] data_out_mask_h;
 
-
+// Connect outputs
+assign instr_mem_read = 1'b1; //always read next instruction for CP1 (no hazards)
+assign data_mem_read = control_word_ex_mem.data_mem_read;
+assign data_mem_write = control_word_ex_mem.data_mem_write;
+assign instr_mem_address = pc_out;
+assign data_mem_address = alu_out_ex_mem;
 
 
 // Pipeline stage registers
