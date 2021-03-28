@@ -11,14 +11,14 @@ module mem_wb_regs
 	input rv32i_control_word control_word_i,
 	input logic [31:0] mem_data_out_i,
 	input logic [31:0] alu_out_i,
-	input logic br_en_i,
+	input logic [31:0] br_en_i,
     output logic [31:0] pc_o,
 	output rv32i_word instruction_o,
 	output instruction_decoded_t instruction_decoded_o,
 	output rv32i_control_word control_word_o,
 	output logic [31:0] mem_data_out_o,
 	output logic [31:0] alu_out_o,
-	output logic br_en_o
+	output logic [31:0] br_en_o
 );
 
 // internal registers

@@ -101,7 +101,7 @@ assign instr_mem_read = 1'b1; //always read next instruction for CP1 (no hazards
 assign data_mem_read = control_word_ex_mem.data_mem_read;
 assign data_mem_write = control_word_ex_mem.data_mem_write;
 assign instr_mem_address = pc_out;
-assign data_mem_address = alu_out_ex_mem;
+assign data_mem_address = {alu_out_ex_mem[31:2], 2'b0}; //align to 4-byte
 
 
 // Pipeline stage registers
@@ -229,14 +229,14 @@ alu alu(
 always_comb begin
 
 	//logic for pcmux_sel
-	if(br_en_ex_mem) begin
-		if(control_word_ex_mem.opcode == op_br || control_word_ex_mem.opcode == op_jal) begin
+	if(br_en) begin
+		if(control_word_id_ex.opcode == op_br || control_word_id_ex.opcode == op_jal) begin
 			pcmux_sel = pcmux::alu_out;
 		end
-		else if (control_word_ex_mem.opcode == op_br || control_word_ex_mem.opcode == op_jal) begin
+		else if (control_word_id_ex.opcode == op_jalr) begin
 			pcmux_sel = pcmux::alu_mod2;
 		end
-		else pcmux_sel = pcmux::alu_out;
+		else pcmux_sel = pcmux::pc_plus4;
 	end
 	else pcmux_sel = pcmux::pc_plus4;
 	
@@ -340,8 +340,8 @@ always_comb begin : MUXES
 	
     unique case (pcmux_sel)
         pcmux::pc_plus4: pcmux_out = pc_out + 4;
-		pcmux::alu_out: pcmux_out = alu_out_ex_mem;
-		pcmux::alu_mod2: pcmux_out = {alu_out_ex_mem[31:1], 1'b0};
+		pcmux::alu_out: pcmux_out = alu_out;
+		pcmux::alu_mod2: pcmux_out = {alu_out[31:1], 1'b0};
         default: `BAD_MUX_SEL;
     endcase
 	
