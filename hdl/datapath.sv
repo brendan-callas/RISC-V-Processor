@@ -22,7 +22,7 @@ module datapath
 // Outputs of IF/ID Stage
 rv32i_word pc_if_id;
 rv32i_word instruction_if_id;
-rv32i_word instruction_decoded; //from instruction_decoder
+instruction_decoded_t instruction_decoded; //from instruction_decoder
 
 // Outputs of Regfile
 rv32i_word rs1_out;
@@ -31,13 +31,16 @@ rv32i_word rs2_out;
 // Output of Control ROM
 rv32i_control_word control_word;
 
+rv32i_word pc_out;
+rv32i_word pcmux_out;
+
 // Outputs of ID/EX Stage
 rv32i_control_word control_word_id_ex;
 rv32i_word rs1_out_id_ex;
 rv32i_word rs2_out_id_ex;
 rv32i_word pc_id_ex;
 rv32i_word instruction_id_ex;
-rv32i_word instruction_decoded_id_ex;
+instruction_decoded_t instruction_decoded_id_ex;
 
 rv32i_word cmpmux_out;
 logic br_en; //output of Comparator
@@ -50,7 +53,7 @@ rv32i_control_word control_word_ex_mem;
 rv32i_word rs2_out_ex_mem;
 rv32i_word pc_ex_mem;
 rv32i_word instruction_ex_mem;
-rv32i_word instruction_decoded_ex_mem;
+instruction_decoded_t instruction_decoded_ex_mem;
 rv32i_word alu_out_ex_mem;
 logic br_en_ex_mem;
 logic [31:0] br_en_extended; //zero-extend
@@ -61,7 +64,7 @@ rv32i_word mem_data_out; //from Data Cache
 rv32i_control_word control_word_mem_wb;
 rv32i_word pc_mem_wb;
 rv32i_word instruction_mem_wb;
-rv32i_word instruction_decoded_mem_wb;
+instruction_decoded_t instruction_decoded_mem_wb;
 rv32i_word alu_out_mem_wb;
 logic [31:0] br_en_mem_wb;
 rv32i_word mem_data_out_mem_wb;
@@ -74,6 +77,20 @@ alumux::alumux1_sel_t alumux1_sel;
 alumux::alumux2_sel_t alumux2_sel;
 regfilemux::regfilemux_sel_t regfilemux_sel;
 cmpmux::cmpmux_sel_t cmpmux_sel;
+
+
+// signals for loading bytes/halves
+rv32i_word lb;
+rv32i_word lbu;
+rv32i_word lh;
+rv32i_word lhu;
+
+// signals for storing bytes/halves
+rv32i_word data_out_b;
+rv32i_word data_out_h;
+
+logic [3:0] data_out_mask_b;
+logic [3:0] data_out_mask_h;
 
 
 
@@ -104,8 +121,48 @@ id_ex_regs id_ex_regs(
 	.instruction_o(instruction_id_ex),
 	.instruction_decoded_o(instruction_decoded_id_ex),
 	.control_word_o(control_word_id_ex),
-	.rs1_out_o(rs1_id_ex),
-	.rs2_out_o(rs2_id_ex)
+	.rs1_out_o(rs1_out_id_ex),
+	.rs2_out_o(rs2_out_id_ex)
+);
+
+ex_mem_regs ex_mem_regs(
+	.clk(clk),
+    .rst(rst),
+    .load(1'b1),
+    .pc_i(pc_id_ex),
+	.instruction_i(instruction_id_ex),
+	.instruction_decoded_i(instruction_decoded_id_ex),
+	.control_word_i(control_word_id_ex),
+	.rs2_out_i(rs2_out_id_ex),
+	.alu_out_i(alu_out),
+	.br_en_i(br_en),
+    .pc_o(pc_ex_mem),
+	.instruction_o(instruction_ex_mem),
+	.instruction_decoded_o(instruction_decoded_ex_mem),
+	.control_word_o(control_word_ex_mem),
+	.rs2_out_o(rs2_out_ex_mem),
+	.alu_out_o(alu_out_ex_mem),
+	.br_en_o(br_en_ex_mem)
+);
+
+mem_wb_regs mem_wb_regs(
+	.clk(clk),
+    .rst(rst),
+    .load(1'b1),
+    .pc_i(pc_ex_mem),
+	.instruction_i(instruction_ex_mem),
+	.instruction_decoded_i(instruction_decoded_ex_mem),
+	.control_word_i(control_word_ex_mem),
+	.alu_out_i(alu_out_ex_mem),
+	.br_en_i(br_en_extended),
+	.mem_data_out_i(data_mem_rdata),
+    .pc_o(pc_mem_wb),
+	.instruction_o(instruction_mem_wb),
+	.instruction_decoded_o(instruction_decoded_mem_wb),
+	.control_word_o(control_word_mem_wb),
+	.alu_out_o(alu_out_mem_wb),
+	.br_en_o(br_en_mem_wb),
+	.mem_data_out_o(mem_data_out_mem_wb),
 );
 
 
@@ -144,6 +201,195 @@ instruction_decoder instruction_decoder(
     .in(instruction_if_id),
     .out(instruction_decoded)
 );
+
+cmp cmp(
+	.cmpop(control_word_id_ex.cmpop),
+	.a(rs1_out_id_ex),
+	.b(cmpmux_out),
+	.br_en(br_en)
+);
+
+alu alu(
+	.aluop(control_word_id_ex.aluop),
+    .a(alumux1_out),
+	.b(alumux2_out),
+    .f(alu_out)
+);
+
+
+always_comb begin
+
+	//logic for pcmux_sel
+	if(br_en_ex_mem) begin
+		if(control_word_ex_mem.opcode == op_br || control_word_ex_mem.opcode == op_jal) begin
+			pcmux_sel = pcmux::alu_out;
+		end
+		else if (control_word_ex_mem.opcode == op_br || control_word_ex_mem.opcode == op_jal) begin
+			pcmux_sel = pcmux::alu_mod2;
+		end
+		else pcmux_sel = pcmux::alu_out;
+	end
+	else pcmux_sel = pcmux::pc_plus4;
+	
+	//zero extend br_en
+	br_en_extended = {31'b0, br_en_ex_mem};
+end
+
+
+
+/******************************** Muxes **************************************/
+always_comb begin : MUXES
+	
+	
+	// logic for regfilemux inputs
+	case ( alu_out_mem_wb[1:0] )
+	
+		2'b00: begin
+			lb = { {24{mem_data_out_mem_wb[7]}}, mem_data_out_mem_wb[7:0] };
+			lbu = { 24'b0, mem_data_out_mem_wb[7:0] };
+			lh = { {16{mem_data_out_mem_wb[15]}}, mem_data_out_mem_wb[15:0] };
+			lhu = { 16'b0, mem_data_out_mem_wb[15:0] };
+			
+			
+		end
+		
+		2'b01: begin
+			lb = { {24{mem_data_out_mem_wb[15]}}, mem_data_out_mem_wb[15:8] };
+			lbu = { 24'b0, mem_data_out_mem_wb[15:8] };
+			lh = { {16{mem_data_out_mem_wb[15]}}, mem_data_out_mem_wb[23:8] }; // this is probably undefined for half word
+			lhu = { 16'b0, mem_data_out_mem_wb[23:8] };
+			
+			
+		end
+		
+		2'b10: begin 
+			lb = { {24{mem_data_out_mem_wb[23]}}, mem_data_out_mem_wb[23:16] };
+			lbu = { 24'b0, mem_data_out_mem_wb[23:16] };
+			lh = { {16{mem_data_out_mem_wb[31]}}, mem_data_out_mem_wb[31:16] };
+			lhu = { 16'b0, mem_data_out_mem_wb[31:16] };
+			
+			
+		end
+		
+		2'b11: begin
+			lb = { {24{mem_data_out_mem_wb[31]}}, mem_data_out_mem_wb[31:24] };
+			lbu = { 24'b0, mem_data_out_mem_wb[31:24] };
+			lh = { {16{mem_data_out_mem_wb[31]}}, mem_data_out_mem_wb[31:16] };
+			lhu = { 16'b0, mem_data_out_mem_wb[31:16] };
+		end
+	endcase
+	
+	// Mux for setting data out (to memory) and mem_byte_enable masks, for storing/loading bytes or halves
+	case ( alu_out_ex_mem[1:0]) // alu_out will hold memory address
+	
+		2'b00: begin
+			data_out_b = { 24'b0, rs2_out_ex_mem[7:0] };
+			data_out_h = { 16'b0, rs2_out_ex_mem[15:0] };
+			
+			data_out_mask_b = 4'b0001;
+			data_out_mask_h = 4'b0011;
+		end
+		
+		2'b01: begin
+			data_out_b = { 16'b0, rs2_out_ex_mem[7:0], 8'b0 };
+			data_out_h = { 8'b0, rs2_out_ex_mem[15:0], 8'b0 }; // this is probably undefined for half word
+			
+			data_out_mask_b = 4'b0010;
+			data_out_mask_h = 4'b0011;
+		end
+		
+		2'b10: begin 
+			data_out_b = { 8'b0, rs2_out_ex_mem[7:0], 16'b0 };
+			data_out_h = { rs2_out_ex_mem[15:0], 16'b0 };
+			
+			data_out_mask_b = 4'b0100;
+			data_out_mask_h = 4'b1100;
+		end
+		
+		2'b11: begin
+			data_out_b = { rs2_out_ex_mem[7:0], 24'b0 };
+			data_out_h = { rs2_out_ex_mem[15:0], 16'b0 };
+			
+			data_out_mask_b = 4'b1000;
+			data_out_mask_h = 4'b1100;
+		end
+	endcase
+	
+	
+    unique case (pcmux_sel)
+        pcmux::pc_plus4: pcmux_out = pc_out + 4;
+		pcmux::alu_out: pcmux_out = alu_out_ex_mem;
+		pcmux::alu_mod2: pcmux_out = {alu_out_ex_mem[31:1], 1'b0};
+        default: `BAD_MUX_SEL;
+    endcase
+	
+	// alumux1
+	unique case (alumux1_sel)
+		alumux::rs1_out: alumux1_out = rs1_out_id_ex;
+		alumux::pc_out: alumux1_out = pc_id_ex;
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// alumux2
+	unique case (alumux2_sel)
+		alumux::i_imm: alumux2_out = instruction_decoded_id_ex.i_imm;
+		alumux::u_imm: alumux2_out = instruction_decoded_id_ex.u_imm;
+		alumux::b_imm: alumux2_out = instruction_decoded_id_ex.b_imm;
+		alumux::s_imm: alumux2_out = instruction_decoded_id_ex.s_imm;
+		alumux::j_imm: alumux2_out = instruction_decoded_id_ex.j_imm;
+		alumux::rs2_out: alumux2_out = rs2_out_id_ex;
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// cmpmux
+	unique case (cmpmux_sel)
+		cmpmux::rs2_out: cmpmux_out = rs2_out_id_ex;
+		cmpmux::i_imm: cmpmux_out = instruction_decoded_id_ex.i_imm;
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// regfilemux
+	unique case (regfilemux_sel)
+		regfilemux::alu_out: regfilemux_out = alu_out_mem_wb;
+		regfilemux::br_en: regfilemux_out = br_en_mem_wb;
+		regfilemux::u_imm: regfilemux_out = instruction_decoded_mem_wb.u_imm;
+		regfilemux::lw: regfilemux_out = mem_data_out_mem_wb;
+		regfilemux::pc_plus4: regfilemux_out = pc_mem_wb + 4;
+		regfilemux::lb: regfilemux_out = lb;
+		regfilemux::lbu: regfilemux_out = lbu;
+		regfilemux::lh: regfilemux_out = lh;
+		regfilemux::lhu: regfilemux_out = lhu;
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// set data being sent to memory (data cache)
+	case (instruction_decoded_ex_mem.funct3)
+		sb: begin
+			data_mem_wdata = data_out_b;
+			mem_byte_enable = data_out_mask_b;
+		end	
+		
+		sh: begin
+			data_mem_wdata = data_out_h;
+			mem_byte_enable = data_out_mask_h;
+		end
+		
+		sw: begin
+			data_mem_wdata = rs2_out_ex_mem;
+			mem_byte_enable = 4'b1111;
+		end
+		
+		default: begin
+			data_mem_wdata = rs2_out_ex_mem;
+			mem_byte_enable = 4'b1111;
+		end
+		
+	endcase
+	
+	
+	
+	
+end
 
 
 
