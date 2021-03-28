@@ -3,49 +3,45 @@ module mp4(
 	input clk,
 	input rst,
 	
-	
-	input pmem_mem_resp,
-	input pmem_mem_rdata,
-	
-	output rv32i_word pmem_mem_read,
-	output pmem_mem_write,
-	output pmem_mem_wdata,
-	output rv32i_word pmem_mem_addr
+	/* I Cache Ports */
+    output logic inst_read,
+    output logic [31:0] inst_addr,
+    input logic inst_resp,
+    input logic [31:0] inst_rdata,
 
+    /* D Cache Ports */
+    output logic data_read,
+    output logic data_write,
+    output logic [3:0] data_mbe,
+    output logic [31:0] data_addr,
+    output logic [31:0] data_wdata,
+    input logic data_resp,
+    input logic [31:0] data_rdata
 );
 
 	
-
 datapath datapath(
 
-	.clk,
-	.rst,
-
-	//inputs
-	.instr_mem_resp,
-	.data_mem_resp,
-	.instr_mem_rdata,
-	.data_mem_rdata,
-
-	//outputs
-	.instr_mem_read,
-	.data_mem_read,
-	.data_mem_write,
-	.mem_byte_enable,
-	.instr_mem_address,
-	.data_mem_address,
-	.data_mem_wdata
-
-);
-
-control_rom control_rom(
-
-	.opcode,
-	.funct3,
-	.funct7,
+	.clk(clk),
+	.rst(rst),
 	
-	.control_word
+	// I Cache ports
+	.instr_mem_read(inst_read),
+	.instr_mem_address(inst_addr),
+	.instr_mem_resp(inst_resp),
+	.instr_mem_rdata(inst_rdata),
+	
+	
+	// D Cache ports
+	.data_mem_read(data_read),
+	.data_mem_write(data_write),
+	.mem_byte_enable(data_mbe),
+	.data_mem_address(data_addr),
+	.data_mem_wdata(data_wdata),
+	.data_mem_resp(data_resp),
+	.data_mem_rdata(data_rdata)	
 
 );
+
 
 endmodule : mp4

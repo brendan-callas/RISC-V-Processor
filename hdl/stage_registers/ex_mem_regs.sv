@@ -5,14 +5,14 @@ module ex_mem_regs
     input clk,
     input rst,
     input load,
-    input logic [32:0] pc_i,
+    input logic [31:0] pc_i,
 	input rv32i_word instruction_i,
 	input instruction_decoded_t instruction_decoded_i,
 	input rv32i_control_word control_word_i,
 	input rv32i_word rs2_out_i,
 	input logic [31:0] alu_out_i,
 	input logic br_en_i,
-    output logic [32:0] pc_o,
+    output logic [31:0] pc_o, 
 	output rv32i_word instruction_o,
 	output instruction_decoded_t instruction_decoded_o,
 	output rv32i_control_word control_word_o,
@@ -22,7 +22,7 @@ module ex_mem_regs
 );
 
 // internal registers
-logic [32:0] pc;
+logic [31:0] pc;
 rv32i_word instruction;
 instruction_decoded_t instruction_decoded;
 rv32i_control_word control_word;

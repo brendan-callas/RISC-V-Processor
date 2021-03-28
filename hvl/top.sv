@@ -110,12 +110,20 @@ mp4 dut(
 	.clk(itf.clk),
 	.rst(itf.rst),
 	
-	.pmem_mem_read(itf.mem_read),
-	.pmem_mem_write(itf.mem_write),
-	.pmem_mem_wdata(itf.mem_wdata),
-	.pmem_mem_rdata(itf.mem_rdata),
-	.pmem_mem_addr(itf.mem_addr),
-	.pmem_mem_resp(itf.mem_resp)
+	/* I Cache Ports */
+    .inst_read(itf.inst_read),
+    .inst_addr(itf.inst_addr),
+    .inst_resp(itf.inst_resp),
+    .inst_rdata(itf.inst_rdata),
+
+    /* D Cache Ports */
+    .data_read(itf.data_read),
+    .data_write(itf.data_write),
+    .data_mbe(itf.data_mbe),
+    .data_addr(itf.data_addr),
+    .data_wdata(itf.data_wdata),
+    .data_resp(itf.data_resp),
+    .data_rdata(itf.data_rdata)
 
 );
 /***************************** End Instantiation *****************************/

@@ -20,6 +20,7 @@ branch_funct3_t cmpop;
 logic data_mem_read;
 logic data_mem_write;
 
+assign control_word.opcode = opcode;
 assign control_word.aluop = aluop;
 assign control_word.cmpop = cmpop;
 assign control_word.alumux1_sel	= alumux1_sel;
@@ -45,6 +46,8 @@ function void set_defaults();
 endfunction
 
 always_comb begin
+
+	set_defaults();
 
 	case(opcode)
 				

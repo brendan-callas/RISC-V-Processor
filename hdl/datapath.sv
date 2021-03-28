@@ -1,3 +1,5 @@
+`define BAD_MUX_SEL $fatal("%0t %s %0d: Illegal mux select", $time, `__FILE__, `__LINE__)
+
 import rv32i_types::*;
 
 module datapath
@@ -169,7 +171,7 @@ mem_wb_regs mem_wb_regs(
 	.control_word_o(control_word_mem_wb),
 	.alu_out_o(alu_out_mem_wb),
 	.br_en_o(br_en_mem_wb),
-	.mem_data_out_o(mem_data_out_mem_wb),
+	.mem_data_out_o(mem_data_out_mem_wb)
 );
 
 
@@ -223,7 +225,7 @@ alu alu(
     .f(alu_out)
 );
 
-
+// Mux Selects
 always_comb begin
 
 	//logic for pcmux_sel
@@ -237,6 +239,19 @@ always_comb begin
 		else pcmux_sel = pcmux::alu_out;
 	end
 	else pcmux_sel = pcmux::pc_plus4;
+	
+	
+	// ALU Mux Selects
+	alumux1_sel = control_word_id_ex.alumux1_sel;
+	alumux2_sel = control_word_id_ex.alumux2_sel;
+	
+	// Regfile Mux Select
+	regfilemux_sel = control_word_mem_wb.regfilemux_sel;
+	
+	// CMP Mux Select
+	cmpmux_sel = control_word_id_ex.cmpmux_sel;
+	
+	
 	
 	//zero extend br_en
 	br_en_extended = {31'b0, br_en_ex_mem};

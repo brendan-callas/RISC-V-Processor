@@ -5,14 +5,14 @@ module if_id_regs
     input clk,
     input rst,
     input load,
-    input logic [32:0] pc_i,
+    input logic [31:0] pc_i,
 	input rv32i_word instruction_i,
-    output logic [32:0] pc_o,
+    output logic [31:0] pc_o,
 	output rv32i_word instruction_o
 );
 
 // internal registers
-logic [32:0] pc;
+logic [31:0] pc;
 rv32i_word instruction;
 
 always_ff @(posedge clk)
