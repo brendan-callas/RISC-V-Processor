@@ -229,6 +229,16 @@ alu alu(
 always_comb begin
 
 	//logic for pcmux_sel
+	if ((br_en && control_word_id_ex.opcode == op_br) || control_word_id_ex.opcode == op_jal) begin
+		pcmux_sel = pcmux::alu_out;
+	end
+	else if (control_word_id_ex.opcode == op_jalr) begin
+		pcmux_sel = pcmux::alu_mod2;
+	end
+	else pcmux_sel = pcmux::pc_plus4;
+
+
+	/*
 	if(br_en) begin
 		if(control_word_id_ex.opcode == op_br || control_word_id_ex.opcode == op_jal) begin
 			pcmux_sel = pcmux::alu_out;
@@ -238,7 +248,7 @@ always_comb begin
 		end
 		else pcmux_sel = pcmux::pc_plus4;
 	end
-	else pcmux_sel = pcmux::pc_plus4;
+	else pcmux_sel = pcmux::pc_plus4;*/
 	
 	
 	// ALU Mux Selects
