@@ -103,8 +103,27 @@ assign data_mem_write = control_word_ex_mem.data_mem_write;
 assign inst_mem_address = pc_out;
 assign data_mem_address = {alu_out_ex_mem[31:2], 2'b0}; //align to 4-byte
 
+// signals for forwarding/hazard module
+rs1mux_sel_t rs1mux_sel;
+rs2mux_sel_t rs2mux_sel;
+rv32i_word ex_mem_forwarded_out;
+rv32i_word mem_wb_forwarded_out;
 
-// Pipeline stage registers
+rv32i_word lb_ex_mem;
+rv32i_word lbu_ex_mem;
+rv32i_word lh_ex_mem;
+rv32i_word lhu_ex_mem;
+
+assign mem_wb_forwarded_out = regfilemux_out; // this double name is unnecessary but it helps somewhat with keeping track of signals
+
+// stall signals
+logic stall_pc;
+logic stall_if_id;
+logic stall_id_ex;
+logic stall_ex_mem;
+logic stall_mem_wb;
+
+// Instantiate pipeline stage registers
 
 if_id_regs if_id_regs(
 	.clk(clk),
@@ -417,6 +436,61 @@ always_comb begin : MUXES
 		end
 		
 	endcase
+	
+	/******* Muxes for Forwarding/Hazard Below ***********/
+	
+	// logic for regfilemux (ex/mem) inputs
+	case ( alu_out_ex_mem[1:0] )
+	
+		2'b00: begin
+			lb_ex_mem = { {24{data_mem_rdata[7]}}, data_mem_rdata[7:0] };
+			lbu_ex_mem = { 24'b0, data_mem_rdata[7:0] };
+			lh_ex_mem = { {16{data_mem_rdata[15]}}, data_mem_rdata[15:0] };
+			lhu_ex_mem = { 16'b0, data_mem_rdata[15:0] };
+			
+			
+		end
+		
+		2'b01: begin
+			lb_ex_mem = { {24{data_mem_rdata[15]}}, data_mem_rdata[15:8] };
+			lbu_ex_mem = { 24'b0, data_mem_rdata[15:8] };
+			lh_ex_mem = { {16{data_mem_rdata[15]}}, data_mem_rdata[23:8] }; // this is probably undefined for half word
+			lhu_ex_mem = { 16'b0, data_mem_rdata[23:8] };
+			
+			
+		end
+		
+		2'b10: begin 
+			lb_ex_mem = { {24{data_mem_rdata[23]}}, data_mem_rdata[23:16] };
+			lbu_ex_mem = { 24'b0, data_mem_rdata[23:16] };
+			lh_ex_mem = { {16{data_mem_rdata[31]}}, data_mem_rdata[31:16] };
+			lhu_ex_mem = { 16'b0, data_mem_rdata[31:16] };
+			
+			
+		end
+		
+		2'b11: begin
+			lb_ex_mem = { {24{data_mem_rdata[31]}}, data_mem_rdata[31:24] };
+			lbu_ex_mem = { 24'b0, data_mem_rdata[31:24] };
+			lh_ex_mem = { {16{data_mem_rdata[31]}}, data_mem_rdata[31:16] };
+			lhu_ex_mem = { 16'b0, data_mem_rdata[31:16] };
+		end
+	endcase
+	
+	// regfilemux on output of EX/MEM Stage
+	unique case (control_word_ex_mem.regfilemux_sel)
+		regfilemux::alu_out: ex_mem_forwarded_out = alu_out_ex_mem;
+		regfilemux::br_en: ex_mem_forwarded_out = br_en_ex_mem;
+		regfilemux::u_imm: ex_mem_forwarded_out = instruction_decoded_ex_mem.u_imm;
+		regfilemux::lw: ex_mem_forwarded_out = data_mem_rdata;
+		regfilemux::pc_plus4: ex_mem_forwarded_out = pc_ex_mem + 4;
+		regfilemux::lb: ex_mem_forwarded_out = lb_ex_mem;
+		regfilemux::lbu: ex_mem_forwarded_out = lbu_ex_mem;
+		regfilemux::lh: ex_mem_forwarded_out = lh_ex_mem;
+		regfilemux::lhu: ex_mem_forwarded_out = lhu_ex_mem;
+		default: `BAD_MUX_SEL;
+	endcase
+	
 	
 	
 	

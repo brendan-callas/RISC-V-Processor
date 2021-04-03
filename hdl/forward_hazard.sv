@@ -65,6 +65,31 @@ always_comb begin
 		rs2mux_sel = rs2mux::mem_wb_forwarded;
 	end
 	
+	/******** Stalling Logic ***********/
+  
+	// When we have a cache miss on either instruction or data, we want to stall the pipeline until memory responds
+	// If there is a data hazard involving a load, we also want to stall until the data is ready.
+	  
+	if ( ( (inst_mem_read==1'b1) && (inst_mem_resp==1'b0) ) || ( (data_mem_read==1'b1) && (data_mem_resp==1'b0) ) || ( (data_mem_write==1'b1) && (data_mem_resp==1'b0) ) ) begin
+		//stall_everything
+		stall_pc = 1'b1;
+		stall_if_id = 1'b1;
+		stall_id_ex = 1'b1;
+		stall_ex_mem = 1'b1;
+		stall_mem_wb = 1'b1;
+	end
+		
+
+	  
+	// loading hazards
+	// test to see if the instruction is a load
+	// check to see if the destination register field of the load in the EX stage matches either source register of the instruction in the ID stage.
+	// If the condition holds, the instruction stalls one clock cycle.
+	if ( (data_mem_read==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) ) begin
+		stall_pc = 1'b1;
+		stall_if_id = 1'b1;
+		stall_id_ex = 1'b1;
+	end
 
 end
 
