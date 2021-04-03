@@ -26,10 +26,10 @@ datapath datapath(
 	.rst(rst),
 	
 	// I Cache ports
-	.instr_mem_read(inst_read),
-	.instr_mem_address(inst_addr),
-	.instr_mem_resp(inst_resp),
-	.instr_mem_rdata(inst_rdata),
+	.inst_mem_read(inst_read),
+	.inst_mem_address(inst_addr),
+	.inst_mem_resp(inst_resp),
+	.inst_mem_rdata(inst_rdata),
 	
 	
 	// D Cache ports

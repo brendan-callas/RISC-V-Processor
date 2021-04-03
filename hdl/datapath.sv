@@ -6,15 +6,15 @@ module datapath
 (
 	input clk,
     input rst,
-    input instr_mem_resp, //both mem_resp signals are unused for CP1 since we expect data ready in 1 cycle always from magic mem
+    input inst_mem_resp, //both mem_resp signals are unused for CP1 since we expect data ready in 1 cycle always from magic mem
 	input data_mem_resp,
-    input rv32i_word instr_mem_rdata,
+    input rv32i_word inst_mem_rdata,
 	input rv32i_word data_mem_rdata,
-	output logic instr_mem_read,
+	output logic inst_mem_read,
     output logic data_mem_read,
     output logic data_mem_write,
     output logic [3:0] mem_byte_enable,
-    output rv32i_word instr_mem_address,
+    output rv32i_word inst_mem_address,
 	output rv32i_word data_mem_address,
     output rv32i_word data_mem_wdata
 );
@@ -97,10 +97,10 @@ logic [3:0] data_out_mask_b;
 logic [3:0] data_out_mask_h;
 
 // Connect outputs
-assign instr_mem_read = 1'b1; //always read next instruction for CP1 (no hazards)
+assign inst_mem_read = 1'b1; //always read next instruction for CP1 (no hazards)
 assign data_mem_read = control_word_ex_mem.data_mem_read;
 assign data_mem_write = control_word_ex_mem.data_mem_write;
-assign instr_mem_address = pc_out;
+assign inst_mem_address = pc_out;
 assign data_mem_address = {alu_out_ex_mem[31:2], 2'b0}; //align to 4-byte
 
 
@@ -111,7 +111,7 @@ if_id_regs if_id_regs(
     .rst(rst),
     .load(1'b1),
     .pc_i(pc_out),
-	.instruction_i(instr_mem_rdata),
+	.instruction_i(inst_mem_rdata),
     .pc_o(pc_if_id),
 	.instruction_o(instruction_if_id)
 );

@@ -50,3 +50,19 @@ typedef enum bit [3:0] {
 } regfilemux_sel_t;
 endpackage
 
+package rs1mux;
+typedef enum bit [1:0] {
+    rs1_out   		  = 2'b00
+    ,ex_mem_forwarded = 2'b01
+    ,mem_wb_forwarded = 2'b10
+} rs1mux_sel_t;
+endpackage
+
+package rs2mux;
+typedef enum bit [1:0] {
+    rs2_out   		  = 2'b00
+    ,ex_mem_forwarded = 2'b01
+    ,mem_wb_forwarded = 2'b10
+} rs2mux_sel_t;
+endpackage
+
