@@ -11,6 +11,7 @@ module id_ex_regs
 	input rv32i_control_word control_word_i,
 	input rv32i_word rs1_out_i,
 	input rv32i_word rs2_out_i,
+	input logic bubble_control,
     output logic [31:0] pc_o,
 	output rv32i_word instruction_o,
 	output instruction_decoded_t instruction_decoded_o,
@@ -43,9 +44,13 @@ begin
         pc <= pc_i;
 		instruction <= instruction_i;
 		instruction_decoded <= instruction_decoded_i;
-		control_word <= control_word_i;
 		rs1_out <= rs1_out_i;
 		rs2_out <= rs2_out_i;
+		//if we are adding a bubble, zero out control word
+		if(bubble_control)
+			control_word <= '0;
+		else
+			control_word <= control_word_i;
     end
     else
     begin

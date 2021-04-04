@@ -11,6 +11,9 @@ module forward_hazard(
 	input logic load_regfile_mem_wb,
 	
 	// inputs for hazard detection
+	input rv32i_word rd_id_ex,
+	input rv32i_word rs1_if_id,
+	input rv32i_word rs2_if_id,
 	input logic inst_mem_resp,
 	input logic data_mem_resp,
 	input logic inst_mem_read,
@@ -18,22 +21,38 @@ module forward_hazard(
 	input logic data_mem_write,
 	
 	// outputs for forwarding
-	output rs1mux_sel_t rs1mux_sel,
-	output rs2mux_sel_t rs2mux_sel,
+	output rs1mux::rs1mux_sel_t rs1mux_sel,
+	output rs2mux::rs2mux_sel_t rs2mux_sel,
 	
 	// outputs for hazard detection (stalling)
 	
 	// Comments below are preliminary descriptions
 	output logic stall_pc, // don't load pc reg
 	output logic stall_if_id, // don't load IF/ID stage registers
-	output logic stall_id_ex, // override control word outputs with 0 (don't erase data in registers; just use a mux to output 0s instead of values, aka make a bubble)
+	output logic stall_id_ex, // don't load registers
 	output logic stall_ex_mem, // don't load EX/MEM registers. Still want to assert mem_read/mem_write (if stalling due to a cache miss)
-	output logic stall_mem_wb // don't load MEM/WB registers (except mem_data_out??). Probably don't load_regfile, although this probably doesn't actually make a difference
+	output logic stall_mem_wb, // don't load MEM/WB registers . Probably set load_regfile=0, although this probably doesn't actually make a difference
+	output logic bubble_control // override control word with 0s (make a bubble)
 	
 
 );
 
+function void set_defaults();
+	
+	rs1mux_sel = rs1mux::rs1_out;
+	rs2mux_sel = rs2mux::rs2_out;
+	stall_pc = 1'b0;
+	stall_if_id = 1'b0;
+	stall_id_ex = 1'b0;
+	stall_ex_mem = 1'b0;
+	stall_mem_wb = 1'b0;
+	bubble_control = 1'b0;
+	
+endfunction
+
 always_comb begin
+
+	set_defaults();
 
 	/********* forwarding for rs1mux *********/
 
@@ -47,7 +66,7 @@ always_comb begin
 
 	// forward from EX/MEM
 	if ( (load_regfile_ex_mem == 1'b1) && (rd_ex_mem != 32'b0) && (rd_ex_mem == rs1_id_ex)) begin
-		rs1mux_sel = rs1mux::ex_mem_forwarded_out;
+		rs1mux_sel = rs1mux::ex_mem_forwarded;
 	end
 	// forward from MEM/WB
 	else if ( (load_regfile_mem_wb == 1'b1) && (rd_mem_wb != 32'b0) && (rd_mem_wb == rs1_id_ex)) begin
@@ -58,7 +77,7 @@ always_comb begin
 
 	// forward from EX/MEM
 	if ( (load_regfile_ex_mem == 1'b1) && (rd_ex_mem != 32'b0) && (rd_ex_mem == rs2_id_ex)) begin
-		rs2mux_sel = rs2mux::ex_mem_forwarded_out;
+		rs2mux_sel = rs2mux::ex_mem_forwarded;
 	end
 	// forward from MEM/WB
 	else if ( (load_regfile_mem_wb == 1'b1) && (rd_mem_wb != 32'b0) && (rd_mem_wb == rs2_id_ex)) begin
@@ -88,7 +107,7 @@ always_comb begin
 	if ( (data_mem_read==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) ) begin
 		stall_pc = 1'b1;
 		stall_if_id = 1'b1;
-		stall_id_ex = 1'b1;
+		bubble_control = 1'b1;
 	end
 
 end

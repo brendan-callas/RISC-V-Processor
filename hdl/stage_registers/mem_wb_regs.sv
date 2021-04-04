@@ -28,7 +28,7 @@ instruction_decoded_t instruction_decoded;
 rv32i_control_word control_word;
 logic [31:0] mem_data_out;
 logic [31:0] alu_out;
-logic br_en;
+logic [31:0] br_en;
 
 always_ff @(posedge clk)
 begin

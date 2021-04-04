@@ -104,10 +104,12 @@ assign inst_mem_address = pc_out;
 assign data_mem_address = {alu_out_ex_mem[31:2], 2'b0}; //align to 4-byte
 
 // signals for forwarding/hazard module
-rs1mux_sel_t rs1mux_sel;
-rs2mux_sel_t rs2mux_sel;
+rs1mux::rs1mux_sel_t rs1mux_sel;
+rs2mux::rs2mux_sel_t rs2mux_sel;
 rv32i_word ex_mem_forwarded_out;
 rv32i_word mem_wb_forwarded_out;
+rv32i_word rs1mux_out;
+rv32i_word rs2mux_out;
 
 rv32i_word lb_ex_mem;
 rv32i_word lbu_ex_mem;
@@ -122,13 +124,14 @@ logic stall_if_id;
 logic stall_id_ex;
 logic stall_ex_mem;
 logic stall_mem_wb;
+logic bubble_control;
 
 // Instantiate pipeline stage registers
 
 if_id_regs if_id_regs(
 	.clk(clk),
     .rst(rst),
-    .load(1'b1),
+    .load(~stall_if_id),
     .pc_i(pc_out),
 	.instruction_i(inst_mem_rdata),
     .pc_o(pc_if_id),
@@ -138,13 +141,14 @@ if_id_regs if_id_regs(
 id_ex_regs id_ex_regs(
 	.clk(clk),
     .rst(rst),
-    .load(1'b1),
+    .load(~stall_id_ex),
     .pc_i(pc_if_id),
 	.instruction_i(instruction_if_id),
 	.instruction_decoded_i(instruction_decoded),
 	.control_word_i(control_word),
 	.rs1_out_i(rs1_out),
 	.rs2_out_i(rs2_out),
+	.bubble_control(bubble_control),
     .pc_o(pc_id_ex),
 	.instruction_o(instruction_id_ex),
 	.instruction_decoded_o(instruction_decoded_id_ex),
@@ -156,12 +160,12 @@ id_ex_regs id_ex_regs(
 ex_mem_regs ex_mem_regs(
 	.clk(clk),
     .rst(rst),
-    .load(1'b1),
+    .load(~stall_ex_mem),
     .pc_i(pc_id_ex),
 	.instruction_i(instruction_id_ex),
 	.instruction_decoded_i(instruction_decoded_id_ex),
 	.control_word_i(control_word_id_ex),
-	.rs2_out_i(rs2_out_id_ex),
+	.rs2_out_i(rs2mux_out),
 	.alu_out_i(alu_out),
 	.br_en_i(br_en),
     .pc_o(pc_ex_mem),
@@ -176,7 +180,7 @@ ex_mem_regs ex_mem_regs(
 mem_wb_regs mem_wb_regs(
 	.clk(clk),
     .rst(rst),
-    .load(1'b1),
+    .load(~stall_mem_wb),
     .pc_i(pc_ex_mem),
 	.instruction_i(instruction_ex_mem),
 	.instruction_decoded_i(instruction_decoded_ex_mem),
@@ -199,7 +203,7 @@ mem_wb_regs mem_wb_regs(
 pc_register PC(
     .clk  (clk),
     .rst (rst),
-    .load (1'b1),
+    .load (~stall_pc),
     .in   (pcmux_out),
     .out  (pc_out)
 );
@@ -232,7 +236,7 @@ instruction_decoder instruction_decoder(
 
 cmp cmp(
 	.cmpop(control_word_id_ex.cmpop),
-	.a(rs1_out_id_ex),
+	.a(rs1mux_out),
 	.b(cmpmux_out),
 	.br_en(br_en)
 );
@@ -242,6 +246,40 @@ alu alu(
     .a(alumux1_out),
 	.b(alumux2_out),
     .f(alu_out)
+);
+
+// Forwarding/Hazard Module
+forward_hazard forward_hazard_module(
+
+	// inputs for forwarding
+	.rs1_id_ex(instruction_decoded_id_ex.rs1),
+	.rs2_id_ex(instruction_decoded_id_ex.rs2),
+	.rd_ex_mem(instruction_decoded_ex_mem.rd),
+	.rd_mem_wb(instruction_decoded_mem_wb.rd),
+	.load_regfile_ex_mem(control_word_ex_mem.load_regfile),
+	.load_regfile_mem_wb(control_word_mem_wb.load_regfile),
+	
+	// inputs for hazard detection
+	.rd_id_ex(instruction_decoded_id_ex.rd),
+	.rs1_if_id(instruction_decoded.rs1),
+	.rs2_if_id(instruction_decoded.rs2),
+	.inst_mem_resp(inst_mem_resp),
+	.data_mem_resp(data_mem_resp),
+	.inst_mem_read(inst_mem_read),
+	.data_mem_read(data_mem_read),
+	.data_mem_write(data_mem_write),
+	
+	// outputs for forwarding
+	.rs1mux_sel(rs1mux_sel),
+	.rs2mux_sel(rs2mux_sel),
+	
+	// outputs for hazard detection (stalling)
+	.stall_pc(stall_pc),
+	.stall_if_id(stall_if_id),
+	.stall_id_ex(stall_id_ex),
+	.stall_ex_mem(stall_ex_mem),
+	.stall_mem_wb(stall_mem_wb),
+	.bubble_control(bubble_control)
 );
 
 // Mux Selects
@@ -280,10 +318,9 @@ always_comb begin
 	// CMP Mux Select
 	cmpmux_sel = control_word_id_ex.cmpmux_sel;
 	
-	
-	
 	//zero extend br_en
 	br_en_extended = {31'b0, br_en_ex_mem};
+
 end
 
 
@@ -376,7 +413,7 @@ always_comb begin : MUXES
 	
 	// alumux1
 	unique case (alumux1_sel)
-		alumux::rs1_out: alumux1_out = rs1_out_id_ex;
+		alumux::rs1_out: alumux1_out = rs1mux_out;
 		alumux::pc_out: alumux1_out = pc_id_ex;
 		default: `BAD_MUX_SEL;
 	endcase
@@ -388,7 +425,7 @@ always_comb begin : MUXES
 		alumux::b_imm: alumux2_out = instruction_decoded_id_ex.b_imm;
 		alumux::s_imm: alumux2_out = instruction_decoded_id_ex.s_imm;
 		alumux::j_imm: alumux2_out = instruction_decoded_id_ex.j_imm;
-		alumux::rs2_out: alumux2_out = rs2_out_id_ex;
+		alumux::rs2_out: alumux2_out = rs2mux_out;
 		default: `BAD_MUX_SEL;
 	endcase
 	
@@ -440,6 +477,7 @@ always_comb begin : MUXES
 	/******* Muxes for Forwarding/Hazard Below ***********/
 	
 	// logic for regfilemux (ex/mem) inputs
+	// TODO Not entirely sure that data_mem_rdata is the correct value to use
 	case ( alu_out_ex_mem[1:0] )
 	
 		2'b00: begin
@@ -489,6 +527,20 @@ always_comb begin : MUXES
 		regfilemux::lh: ex_mem_forwarded_out = lh_ex_mem;
 		regfilemux::lhu: ex_mem_forwarded_out = lhu_ex_mem;
 		default: `BAD_MUX_SEL;
+	endcase
+	
+	// rs1mux
+	unique case (rs1mux_sel)
+		rs1mux::rs1_out: rs1mux_out = rs1_out_id_ex;
+		rs1mux::ex_mem_forwarded: rs1mux_out = ex_mem_forwarded_out;
+		rs1mux::mem_wb_forwarded: rs1mux_out = mem_wb_forwarded_out; // same as regfilemux_out
+	endcase
+	
+	// rs2mux
+	unique case (rs2mux_sel)
+		rs2mux::rs2_out: rs2mux_out = rs2_out_id_ex;
+		rs2mux::ex_mem_forwarded: rs2mux_out = ex_mem_forwarded_out;
+		rs2mux::mem_wb_forwarded: rs2mux_out = mem_wb_forwarded_out; // same as regfilemux_out
 	endcase
 	
 	
