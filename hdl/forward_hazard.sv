@@ -1,19 +1,20 @@
-import rv32i_types::*;
+//import rv32i_types::*;
 
 module forward_hazard(
 	
 	// inputs for forwarding
-	input rv32i_word rs1_id_ex, // register inputs here are indexes of the register (not the data in the register)
-	input rv32i_word rs2_id_ex,
-	input rv32i_word rd_ex_mem,
-	input rv32i_word rd_mem_wb,
+	input logic [4:0] rs1_id_ex, // register inputs here are indexes of the register (not the data in the register)
+	input logic [4:0] rs2_id_ex,
+	input logic [4:0] rd_ex_mem,
+	input logic [4:0] rd_mem_wb,
 	input logic load_regfile_ex_mem,
 	input logic load_regfile_mem_wb,
 	
 	// inputs for hazard detection
-	input rv32i_word rd_id_ex,
-	input rv32i_word rs1_if_id,
-	input rv32i_word rs2_if_id,
+	input logic [4:0] rd_id_ex,
+	input logic [4:0] rs1_if_id,
+	input logic [4:0] rs2_if_id,
+	input logic mem_read_id_ex,
 	input logic inst_mem_resp,
 	input logic data_mem_resp,
 	input logic inst_mem_read,
@@ -52,7 +53,7 @@ endfunction
 
 always_comb begin
 
-	set_defaults();
+	set_defaults(); 
 
 	/********* forwarding for rs1mux *********/
 
@@ -104,7 +105,7 @@ always_comb begin
 	// test to see if the instruction is a load
 	// check to see if the destination register field of the load in the EX stage matches either source register of the instruction in the ID stage.
 	// If the condition holds, the instruction stalls one clock cycle.
-	if ( (data_mem_read==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) ) begin
+	if ( (mem_read_id_ex==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) ) begin
 		stall_pc = 1'b1;
 		stall_if_id = 1'b1;
 		bubble_control = 1'b1;

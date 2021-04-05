@@ -263,6 +263,7 @@ forward_hazard forward_hazard_module(
 	.rd_id_ex(instruction_decoded_id_ex.rd),
 	.rs1_if_id(instruction_decoded.rs1),
 	.rs2_if_id(instruction_decoded.rs2),
+	.mem_read_id_ex(control_word_id_ex.data_mem_read),
 	.inst_mem_resp(inst_mem_resp),
 	.data_mem_resp(data_mem_resp),
 	.inst_mem_read(inst_mem_read),
@@ -411,6 +412,22 @@ always_comb begin : MUXES
         default: `BAD_MUX_SEL;
     endcase
 	
+	// rs1mux
+	unique case (rs1mux_sel)
+		rs1mux::rs1_out: rs1mux_out = rs1_out_id_ex;
+		rs1mux::ex_mem_forwarded: rs1mux_out = ex_mem_forwarded_out;
+		rs1mux::mem_wb_forwarded: rs1mux_out = mem_wb_forwarded_out; // same as regfilemux_out
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// rs2mux
+	unique case (rs2mux_sel)
+		rs2mux::rs2_out: rs2mux_out = rs2_out_id_ex;
+		rs2mux::ex_mem_forwarded: rs2mux_out = ex_mem_forwarded_out;
+		rs2mux::mem_wb_forwarded: rs2mux_out = mem_wb_forwarded_out; // same as regfilemux_out
+		default: `BAD_MUX_SEL;
+	endcase
+	
 	// alumux1
 	unique case (alumux1_sel)
 		alumux::rs1_out: alumux1_out = rs1mux_out;
@@ -431,7 +448,7 @@ always_comb begin : MUXES
 	
 	// cmpmux
 	unique case (cmpmux_sel)
-		cmpmux::rs2_out: cmpmux_out = rs2_out_id_ex;
+		cmpmux::rs2_out: cmpmux_out = rs2mux_out;
 		cmpmux::i_imm: cmpmux_out = instruction_decoded_id_ex.i_imm;
 		default: `BAD_MUX_SEL;
 	endcase
@@ -529,19 +546,7 @@ always_comb begin : MUXES
 		default: `BAD_MUX_SEL;
 	endcase
 	
-	// rs1mux
-	unique case (rs1mux_sel)
-		rs1mux::rs1_out: rs1mux_out = rs1_out_id_ex;
-		rs1mux::ex_mem_forwarded: rs1mux_out = ex_mem_forwarded_out;
-		rs1mux::mem_wb_forwarded: rs1mux_out = mem_wb_forwarded_out; // same as regfilemux_out
-	endcase
 	
-	// rs2mux
-	unique case (rs2mux_sel)
-		rs2mux::rs2_out: rs2mux_out = rs2_out_id_ex;
-		rs2mux::ex_mem_forwarded: rs2mux_out = ex_mem_forwarded_out;
-		rs2mux::mem_wb_forwarded: rs2mux_out = mem_wb_forwarded_out; // same as regfilemux_out
-	endcase
 	
 	
 	

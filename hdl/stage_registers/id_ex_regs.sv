@@ -47,10 +47,11 @@ begin
 		rs1_out <= rs1_out_i;
 		rs2_out <= rs2_out_i;
 		//if we are adding a bubble, zero out control word
-		if(bubble_control)
-			control_word <= '0;
-		else
-			control_word <= control_word_i;
+		//if(bubble_control)
+		//	control_word <= '0;
+		//else
+		//	control_word <= control_word_i;
+		control_word <= control_word_i;
     end
     else
     begin

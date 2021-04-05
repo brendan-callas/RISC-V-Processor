@@ -35,6 +35,9 @@ begin
 	if(load && (src_b == dest) && src_b )
 	  reg_b = in;
 	else  reg_b = src_b ? data[src_b] : 0;
+	
+	
+	
 end
 
 endmodule : regfile
