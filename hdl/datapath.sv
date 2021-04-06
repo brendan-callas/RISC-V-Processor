@@ -412,47 +412,6 @@ always_comb begin : MUXES
         default: `BAD_MUX_SEL;
     endcase
 	
-	// rs1mux
-	unique case (rs1mux_sel)
-		rs1mux::rs1_out: rs1mux_out = rs1_out_id_ex;
-		rs1mux::ex_mem_forwarded: rs1mux_out = ex_mem_forwarded_out;
-		rs1mux::mem_wb_forwarded: rs1mux_out = mem_wb_forwarded_out; // same as regfilemux_out
-		default: `BAD_MUX_SEL;
-	endcase
-	
-	// rs2mux
-	unique case (rs2mux_sel)
-		rs2mux::rs2_out: rs2mux_out = rs2_out_id_ex;
-		rs2mux::ex_mem_forwarded: rs2mux_out = ex_mem_forwarded_out;
-		rs2mux::mem_wb_forwarded: rs2mux_out = mem_wb_forwarded_out; // same as regfilemux_out
-		default: `BAD_MUX_SEL;
-	endcase
-	
-	// alumux1
-	unique case (alumux1_sel)
-		alumux::rs1_out: alumux1_out = rs1mux_out;
-		alumux::pc_out: alumux1_out = pc_id_ex;
-		default: `BAD_MUX_SEL;
-	endcase
-	
-	// alumux2
-	unique case (alumux2_sel)
-		alumux::i_imm: alumux2_out = instruction_decoded_id_ex.i_imm;
-		alumux::u_imm: alumux2_out = instruction_decoded_id_ex.u_imm;
-		alumux::b_imm: alumux2_out = instruction_decoded_id_ex.b_imm;
-		alumux::s_imm: alumux2_out = instruction_decoded_id_ex.s_imm;
-		alumux::j_imm: alumux2_out = instruction_decoded_id_ex.j_imm;
-		alumux::rs2_out: alumux2_out = rs2mux_out;
-		default: `BAD_MUX_SEL;
-	endcase
-	
-	// cmpmux
-	unique case (cmpmux_sel)
-		cmpmux::rs2_out: cmpmux_out = rs2mux_out;
-		cmpmux::i_imm: cmpmux_out = instruction_decoded_id_ex.i_imm;
-		default: `BAD_MUX_SEL;
-	endcase
-	
 	// regfilemux
 	unique case (regfilemux_sel)
 		regfilemux::alu_out: regfilemux_out = alu_out_mem_wb;
@@ -466,32 +425,6 @@ always_comb begin : MUXES
 		regfilemux::lhu: regfilemux_out = lhu;
 		default: `BAD_MUX_SEL;
 	endcase
-	
-	// set data being sent to memory (data cache)
-	case (instruction_decoded_ex_mem.funct3)
-		sb: begin
-			data_mem_wdata = data_out_b;
-			mem_byte_enable = data_out_mask_b;
-		end	
-		
-		sh: begin
-			data_mem_wdata = data_out_h;
-			mem_byte_enable = data_out_mask_h;
-		end
-		
-		sw: begin
-			data_mem_wdata = rs2_out_ex_mem;
-			mem_byte_enable = 4'b1111;
-		end
-		
-		default: begin
-			data_mem_wdata = rs2_out_ex_mem;
-			mem_byte_enable = 4'b1111;
-		end
-		
-	endcase
-	
-	/******* Muxes for Forwarding/Hazard Below ***********/
 	
 	// logic for regfilemux (ex/mem) inputs
 	// TODO Not entirely sure that data_mem_rdata is the correct value to use
@@ -545,6 +478,78 @@ always_comb begin : MUXES
 		regfilemux::lhu: ex_mem_forwarded_out = lhu_ex_mem;
 		default: `BAD_MUX_SEL;
 	endcase
+	
+	// rs1mux
+	unique case (rs1mux_sel)
+		rs1mux::rs1_out: rs1mux_out = rs1_out_id_ex;
+		rs1mux::ex_mem_forwarded: rs1mux_out = ex_mem_forwarded_out;
+		rs1mux::mem_wb_forwarded: rs1mux_out = mem_wb_forwarded_out; // same as regfilemux_out
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// rs2mux
+	unique case (rs2mux_sel)
+		rs2mux::rs2_out: rs2mux_out = rs2_out_id_ex;
+		rs2mux::ex_mem_forwarded: rs2mux_out = ex_mem_forwarded_out;
+		rs2mux::mem_wb_forwarded: rs2mux_out = mem_wb_forwarded_out; // same as regfilemux_out
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// alumux1
+	unique case (alumux1_sel)
+		alumux::rs1_out: alumux1_out = rs1mux_out;
+		alumux::pc_out: alumux1_out = pc_id_ex;
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// alumux2
+	unique case (alumux2_sel)
+		alumux::i_imm: alumux2_out = instruction_decoded_id_ex.i_imm;
+		alumux::u_imm: alumux2_out = instruction_decoded_id_ex.u_imm;
+		alumux::b_imm: alumux2_out = instruction_decoded_id_ex.b_imm;
+		alumux::s_imm: alumux2_out = instruction_decoded_id_ex.s_imm;
+		alumux::j_imm: alumux2_out = instruction_decoded_id_ex.j_imm;
+		alumux::rs2_out: alumux2_out = rs2mux_out;
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	// cmpmux
+	unique case (cmpmux_sel)
+		cmpmux::rs2_out: cmpmux_out = rs2mux_out;
+		cmpmux::i_imm: cmpmux_out = instruction_decoded_id_ex.i_imm;
+		default: `BAD_MUX_SEL;
+	endcase
+	
+	
+	
+	// set data being sent to memory (data cache)
+	case (instruction_decoded_ex_mem.funct3)
+		sb: begin
+			data_mem_wdata = data_out_b;
+			mem_byte_enable = data_out_mask_b;
+		end	
+		
+		sh: begin
+			data_mem_wdata = data_out_h;
+			mem_byte_enable = data_out_mask_h;
+		end
+		
+		sw: begin
+			data_mem_wdata = rs2_out_ex_mem;
+			mem_byte_enable = 4'b1111;
+		end
+		
+		default: begin
+			data_mem_wdata = rs2_out_ex_mem;
+			mem_byte_enable = 4'b1111;
+		end
+		
+	endcase
+	
+	
+	
+	
+	
 	
 	
 	
