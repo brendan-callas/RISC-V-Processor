@@ -126,11 +126,14 @@ logic stall_ex_mem;
 logic stall_mem_wb;
 logic bubble_control;
 
+// reset some pipeline regs when mispredict br_en
+logic squash;
+
 // Instantiate pipeline stage registers
 
 if_id_regs if_id_regs(
 	.clk(clk),
-    .rst(rst),
+    .rst( (rst|squash) ),
     .load(~stall_if_id),
     .pc_i(pc_out),
 	.instruction_i(inst_mem_rdata),
@@ -140,7 +143,7 @@ if_id_regs if_id_regs(
 
 id_ex_regs id_ex_regs(
 	.clk(clk),
-    .rst(rst),
+    .rst( (rst|squash) ),
     .load(~stall_id_ex),
     .pc_i(pc_if_id),
 	.instruction_i(instruction_if_id),
@@ -287,11 +290,15 @@ forward_hazard forward_hazard_module(
 always_comb begin
 
 	//logic for pcmux_sel
+	squash = 1'b0;
+	
 	if ((br_en && control_word_id_ex.opcode == op_br) || control_word_id_ex.opcode == op_jal) begin
 		pcmux_sel = pcmux::alu_out;
+		squash = 1'b1;
 	end
 	else if (control_word_id_ex.opcode == op_jalr) begin
 		pcmux_sel = pcmux::alu_mod2;
+		squash = 1'b1;
 	end
 	else pcmux_sel = pcmux::pc_plus4;
 
