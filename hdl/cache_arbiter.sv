@@ -10,12 +10,14 @@ module cache_arbiter
 	input [31:0] data_mem_addr,
 	input [31:0] inst_mem_addr,
 	input [255:0] data_mem_wdata,
+	input [3:0] inst_mbe,
+	input [3:0] data_mbe,
 	
 	//outputs to caches
 	output [255:0] data_mem_rdata,
 	output [255:0] inst_mem_rdata,
 	output data_mem_resp,
-	output inst_mem_resp
+	output inst_mem_resp,
 	
 	//inputs from adaptor
 	input [255:0] mem_rdata,
@@ -24,8 +26,9 @@ module cache_arbiter
 	//outputs to adaptor
 	output mem_read,
 	output mem_write,
-	output [255:0] mem_wdata
-	output [31:0] mem_address
+	output [255:0] mem_wdata,
+	output [31:0] mem_address,
+	output [3:0] mem_byte_enable
 );
 
 /* State Enumeration */
@@ -47,6 +50,7 @@ always_comb begin : state_actions
 	mem_wdata = data_mem_wdata;
 	data_mem_rdata = mem_rdata; 
 	inst_mem_rdata = mem_rdata;
+	mem_byte_enable = inst_mbe;
 	
 
 	case(state)
@@ -59,6 +63,7 @@ always_comb begin : state_actions
 		mem_write = 1'b0;
 		mem_address = inst_mem_addr;
 		inst_mem_resp = mem_resp;
+		mem_byte_enable = inst_mbe;
 	 end
 	 
 	 data_c: begin
@@ -66,6 +71,7 @@ always_comb begin : state_actions
 		mem_write = data_mem_write;
 		mem_address = data_mem_addr;
 		data_mem_resp = mem_resp;
+		mem_byte_enable = data_mbe;
 	 end
 	 
 	 default: begin
