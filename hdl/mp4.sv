@@ -9,10 +9,8 @@ module mp4(
 	output logic pmem_read,
 	output logic pmem_write,
 	output logic [31:0] pmem_address,
-	output logic [63:0] pmem_wdata,
-	output logic [3:0] mem_byte_enable
-	
-	
+	output logic [63:0] pmem_wdata
+
 	
 );
 
@@ -36,11 +34,12 @@ logic inst_read_p;
 logic [31:0] inst_addr_p;
 logic inst_resp_p;
 logic [255:0] inst_rdata_p;
+logic [255:0] inst_wdata_p; //useless
+logic inst_write_p; //useless
 
 /* D Cache Ports, to Physical Mem */
 logic data_read_p;
 logic data_write_p;
-logic [3:0] data_mbe_p;
 logic [31:0] data_addr_p;
 logic [255:0] data_wdata_p;
 logic data_resp_p;
@@ -90,8 +89,6 @@ cache_arbiter cache_arbiter
 	.data_mem_addr(data_addr_p),
 	.inst_mem_addr(inst_addr_p),
 	.data_mem_wdata(data_wdata_p),
-	.inst_mbe(4'b1111),
-	.data_mbe(data_mbe),
 	
 	//outputs to caches
 	.data_mem_rdata(data_rdata_p),
@@ -107,8 +104,7 @@ cache_arbiter cache_arbiter
 	.mem_read(read_from_mem),
 	.mem_write(write_to_mem),
 	.mem_wdata(cacheline_data_out),
-	.mem_address(address_to_mem),
-	.mem_byte_enable(mem_byte_enable)
+	.mem_address(address_to_mem)
 );
 
 cacheline_adaptor cacheline_adaptor
@@ -140,9 +136,9 @@ cache inst_cache (
   .pmem_resp(inst_resp_p),
   .pmem_rdata(inst_rdata_p),
   .pmem_address(inst_addr_p),
-  .pmem_wdata(256'b0), //nothing
+  .pmem_wdata(inst_wdata_p), //nothing
   .pmem_read(inst_read_p),
-  .pmem_write(1'b0), //nothing
+  .pmem_write(inst_write_p), //nothing
 
   /* CPU memory signals */
   .mem_read(inst_read),

@@ -111,19 +111,29 @@ mp4 dut(
 	.rst(itf.rst),
 	
 	/* I Cache Ports */
-    .inst_read(itf.inst_read),
-    .inst_addr(itf.inst_addr),
-    .inst_resp(itf.inst_resp),
-    .inst_rdata(itf.inst_rdata),
+    //.inst_read(itf.inst_read),
+    //.inst_addr(itf.inst_addr),
+    //.inst_resp(itf.inst_resp),
+    //.inst_rdata(itf.inst_rdata),
 
     /* D Cache Ports */
-    .data_read(itf.data_read),
-    .data_write(itf.data_write),
-    .data_mbe(itf.data_mbe),
-    .data_addr(itf.data_addr),
-    .data_wdata(itf.data_wdata),
-    .data_resp(itf.data_resp),
-    .data_rdata(itf.data_rdata)
+    //.data_read(itf.data_read),
+    //.data_write(itf.data_write),
+    //.data_mbe(itf.data_mbe),
+    //.data_addr(itf.data_addr),
+    //.data_wdata(itf.data_wdata),
+    //.data_resp(itf.data_resp),
+    //.data_rdata(itf.data_rdata)
+	
+	.pmem_resp(itf.mem_resp),
+	.pmem_rdata(itf.mem_rdata),
+	
+	.pmem_read(itf.mem_read),
+	.pmem_write(itf.mem_write),
+	.pmem_address(itf.mem_addr),
+	.pmem_wdata(itf.mem_wdata)
+	
+	
 
 );
 /***************************** End Instantiation *****************************/
