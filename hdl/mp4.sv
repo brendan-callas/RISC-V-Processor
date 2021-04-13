@@ -131,6 +131,7 @@ cacheline_adaptor cacheline_adaptor
 
 cache inst_cache (
   .clk(clk),
+  .rst(rst),
 
   /* Physical memory signals */
   .pmem_resp(inst_resp_p),
@@ -143,15 +144,16 @@ cache inst_cache (
   /* CPU memory signals */
   .mem_read(inst_read),
   .mem_write(1'b0),
-  .mem_byte_enable_cpu(4'b1111),
+  .mem_byte_enable(4'b1111),
   .mem_address(inst_addr),
-  .mem_wdata_cpu(32'b0),
+  .mem_wdata(32'b0),
   .mem_resp(inst_resp),
-  .mem_rdata_cpu(inst_rdata)
+  .mem_rdata(inst_rdata)
 );
 
 cache data_cache (
   .clk(clk),
+  .rst(rst),
 
   /* Physical memory signals */
   .pmem_resp(data_resp_p),
@@ -164,11 +166,11 @@ cache data_cache (
   /* CPU memory signals */
   .mem_read(data_read),
   .mem_write(data_write),
-  .mem_byte_enable_cpu(data_mbe),
+  .mem_byte_enable(data_mbe),
   .mem_address(data_addr),
-  .mem_wdata_cpu(data_wdata),
+  .mem_wdata(data_wdata),
   .mem_resp(data_resp),
-  .mem_rdata_cpu(data_rdata)
+  .mem_rdata(data_rdata)
 );
 
 

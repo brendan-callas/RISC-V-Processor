@@ -1,4 +1,4 @@
-module cache (
+module given_cache (
   input clk,
 
   /* Physical memory signals */
@@ -45,4 +45,4 @@ line_adapter bus (
     .address(mem_address)
 );
 
-endmodule : cache
+endmodule : given_cache
