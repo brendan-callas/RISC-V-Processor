@@ -12,6 +12,7 @@ module ex_mem_regs
 	input rv32i_word rs2_out_i,
 	input logic [31:0] alu_out_i,
 	input logic br_en_i,
+	input logic squash,
     output logic [31:0] pc_o, 
 	output rv32i_word instruction_o,
 	output instruction_decoded_t instruction_decoded_o,
@@ -32,7 +33,8 @@ logic br_en;
 
 always_ff @(posedge clk)
 begin
-    if (rst)
+	// EX/MEM has a special case for squash here, since if there is a stall then we still want to maintain address/mem signals to data cache until the stall is resolved
+    if (rst | (squash & load))
     begin
         pc <= '0;
 		instruction <= '0;
