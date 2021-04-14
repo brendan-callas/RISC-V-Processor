@@ -20,6 +20,7 @@ module forward_hazard(
 	input logic inst_mem_read,
 	input logic data_mem_read,
 	input logic data_mem_write,
+	input logic mem_write_if_id,
 	
 	// outputs for forwarding
 	output rs1mux::rs1mux_sel_t rs1mux_sel,
@@ -105,7 +106,8 @@ always_comb begin
 	// test to see if the instruction is a load
 	// check to see if the destination register field of the load in the EX stage matches either source register of the instruction in the ID stage.
 	// If the condition holds, the instruction stalls one clock cycle.
-	if ( (mem_read_id_ex==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) ) begin
+	// Don't bubble if we have a store-after-load
+	if ( (mem_read_id_ex==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) && (mem_write_if_id == 1'b0) ) begin
 		stall_pc = 1'b1;
 		stall_if_id = 1'b1;
 		bubble_control = 1'b1;

@@ -77,7 +77,15 @@ forwarding_tests:
 
     beq x3, x2, oof
 
+
+	la x10, BAD      # X10 <= Addr[one]
+	lw x11, GOOD 
+    sw x11, 0(x10)       # [one] <= two
+	lw x12, 0(x10) # x12 <- GOOD
+
     lw x7, GOOD
+
+	
 
 halt:
     beq x0, x0, halt

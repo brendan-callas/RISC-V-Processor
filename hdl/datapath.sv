@@ -106,10 +106,12 @@ assign data_mem_address = {alu_out_ex_mem[31:2], 2'b0}; //align to 4-byte
 // signals for forwarding/hazard module
 rs1mux::rs1mux_sel_t rs1mux_sel;
 rs2mux::rs2mux_sel_t rs2mux_sel;
+wdatamux::wdatamux_sel_t wdatamux_sel;
 rv32i_word ex_mem_forwarded_out;
 rv32i_word mem_wb_forwarded_out;
 rv32i_word rs1mux_out;
 rv32i_word rs2mux_out;
+rv32i_word wdatamux_out;
 
 rv32i_word lb_ex_mem;
 rv32i_word lbu_ex_mem;
@@ -273,6 +275,7 @@ forward_hazard forward_hazard_module(
 	.inst_mem_read(inst_mem_read),
 	.data_mem_read(data_mem_read),
 	.data_mem_write(data_mem_write),
+	.mem_write_if_id(control_word.data_mem_write),
 	
 	// outputs for forwarding
 	.rs1mux_sel(rs1mux_sel),
@@ -380,32 +383,32 @@ always_comb begin : MUXES
 	case ( alu_out_ex_mem[1:0]) // alu_out will hold memory address
 	
 		2'b00: begin
-			data_out_b = { 24'b0, rs2_out_ex_mem[7:0] };
-			data_out_h = { 16'b0, rs2_out_ex_mem[15:0] };
+			data_out_b = { 24'b0, wdatamux_out[7:0] };
+			data_out_h = { 16'b0, wdatamux_out[15:0] };
 			
 			data_out_mask_b = 4'b0001;
 			data_out_mask_h = 4'b0011;
 		end
 		
 		2'b01: begin
-			data_out_b = { 16'b0, rs2_out_ex_mem[7:0], 8'b0 };
-			data_out_h = { 8'b0, rs2_out_ex_mem[15:0], 8'b0 }; // this is probably undefined for half word
+			data_out_b = { 16'b0, wdatamux_out[7:0], 8'b0 };
+			data_out_h = { 8'b0, wdatamux_out[15:0], 8'b0 }; // this is probably undefined for half word
 			
 			data_out_mask_b = 4'b0010;
 			data_out_mask_h = 4'b0011;
 		end
 		
 		2'b10: begin 
-			data_out_b = { 8'b0, rs2_out_ex_mem[7:0], 16'b0 };
-			data_out_h = { rs2_out_ex_mem[15:0], 16'b0 };
+			data_out_b = { 8'b0, wdatamux_out[7:0], 16'b0 };
+			data_out_h = { wdatamux_out[15:0], 16'b0 };
 			
 			data_out_mask_b = 4'b0100;
 			data_out_mask_h = 4'b1100;
 		end
 		
 		2'b11: begin
-			data_out_b = { rs2_out_ex_mem[7:0], 24'b0 };
-			data_out_h = { rs2_out_ex_mem[15:0], 16'b0 };
+			data_out_b = { wdatamux_out[7:0], 24'b0 };
+			data_out_h = { wdatamux_out[15:0], 16'b0 };
 			
 			data_out_mask_b = 4'b1000;
 			data_out_mask_h = 4'b1100;
@@ -528,6 +531,13 @@ always_comb begin : MUXES
 		default: `BAD_MUX_SEL;
 	endcase
 	
+	// wdatamux
+	unique case (wdatamux_sel)
+		wdatamux::rs2_out: wdatamux_out = rs2_out_ex_mem;
+		wdatamux::mem_wb_forwarded: wdatamux_out = mem_wb_forwarded_out;
+		default: `BAD_MUX_SEL;
+	endcase
+	
 	
 	
 	// set data being sent to memory (data cache)
@@ -543,12 +553,12 @@ always_comb begin : MUXES
 		end
 		
 		sw: begin
-			data_mem_wdata = rs2_out_ex_mem;
+			data_mem_wdata = wdatamux_out;
 			mem_byte_enable = 4'b1111;
 		end
 		
 		default: begin
-			data_mem_wdata = rs2_out_ex_mem;
+			data_mem_wdata = wdatamux_out;
 			mem_byte_enable = 4'b1111;
 		end
 		

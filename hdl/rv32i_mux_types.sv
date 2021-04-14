@@ -66,3 +66,10 @@ typedef enum bit [1:0] {
 } rs2mux_sel_t;
 endpackage
 
+package wdatamux;
+typedef enum bit {
+    rs2_out   		  = 1'b0
+    ,mem_wb_forwarded = 1'b1
+} wdatamux_sel_t;
+endpackage
+
