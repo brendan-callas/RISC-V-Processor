@@ -135,7 +135,7 @@ logic squash;
 
 if_id_regs if_id_regs(
 	.clk(clk),
-    .rst( (rst|squash) ),
+    .rst( (rst|squash) ), // (rst|squash) 
     .load(~stall_if_id),
     .pc_i(pc_out),
 	.instruction_i(inst_mem_rdata),
@@ -260,10 +260,12 @@ forward_hazard forward_hazard_module(
 	// inputs for forwarding
 	.rs1_id_ex(instruction_decoded_id_ex.rs1),
 	.rs2_id_ex(instruction_decoded_id_ex.rs2),
+	.rs2_ex_mem(instruction_decoded_ex_mem.rs2),
 	.rd_ex_mem(instruction_decoded_ex_mem.rd),
 	.rd_mem_wb(instruction_decoded_mem_wb.rd),
 	.load_regfile_ex_mem(control_word_ex_mem.load_regfile),
 	.load_regfile_mem_wb(control_word_mem_wb.load_regfile),
+	.mem_write_ex_mem(control_word_ex_mem.data_mem_write),
 	
 	// inputs for hazard detection
 	.rd_id_ex(instruction_decoded_id_ex.rd),
@@ -280,6 +282,7 @@ forward_hazard forward_hazard_module(
 	// outputs for forwarding
 	.rs1mux_sel(rs1mux_sel),
 	.rs2mux_sel(rs2mux_sel),
+	.wdatamux_sel(wdatamux_sel),
 	
 	// outputs for hazard detection (stalling)
 	.stall_pc(stall_pc),

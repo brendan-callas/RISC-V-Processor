@@ -47,11 +47,21 @@ begin
 		rs1_out <= rs1_out_i;
 		rs2_out <= rs2_out_i;
 		//if we are adding a bubble, zero out control word
-		//if(bubble_control)
-		//	control_word <= '0;
-		//else
-		//	control_word <= control_word_i;
-		control_word <= control_word_i;
+		if(bubble_control) begin
+			control_word <= '0;
+			instruction <= '0;
+			instruction_decoded <= '0;
+			rs1_out <= '0;
+			rs2_out <= '0;
+		end
+		else begin
+			control_word <= control_word_i;
+			instruction <= instruction_i;
+			instruction_decoded <= instruction_decoded_i;
+			rs1_out <= rs1_out_i;
+			rs2_out <= rs2_out_i;
+		end
+		//control_word <= control_word_i;
     end
     else
     begin

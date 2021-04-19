@@ -5,10 +5,12 @@ module forward_hazard(
 	// inputs for forwarding
 	input logic [4:0] rs1_id_ex, // register inputs here are indexes of the register (not the data in the register)
 	input logic [4:0] rs2_id_ex,
+	input logic [4:0] rs2_ex_mem,
 	input logic [4:0] rd_ex_mem,
 	input logic [4:0] rd_mem_wb,
 	input logic load_regfile_ex_mem,
 	input logic load_regfile_mem_wb,
+	input logic mem_write_ex_mem,
 	
 	// inputs for hazard detection
 	input logic [4:0] rd_id_ex,
@@ -22,9 +24,12 @@ module forward_hazard(
 	input logic data_mem_write,
 	input logic mem_write_if_id,
 	
+	
+	
 	// outputs for forwarding
 	output rs1mux::rs1mux_sel_t rs1mux_sel,
 	output rs2mux::rs2mux_sel_t rs2mux_sel,
+	output wdatamux::wdatamux_sel_t wdatamux_sel,
 	
 	// outputs for hazard detection (stalling)
 	
@@ -43,6 +48,7 @@ function void set_defaults();
 	
 	rs1mux_sel = rs1mux::rs1_out;
 	rs2mux_sel = rs2mux::rs2_out;
+	wdatamux_sel = wdatamux::rs2_out;
 	stall_pc = 1'b0;
 	stall_if_id = 1'b0;
 	stall_id_ex = 1'b0;
@@ -67,23 +73,29 @@ always_comb begin
 	*/
 
 	// forward from EX/MEM
-	if ( (load_regfile_ex_mem == 1'b1) && (rd_ex_mem != 32'b0) && (rd_ex_mem == rs1_id_ex)) begin
+	if ( (load_regfile_ex_mem == 1'b1) && (rd_ex_mem != 5'b0) && (rd_ex_mem == rs1_id_ex)) begin
 		rs1mux_sel = rs1mux::ex_mem_forwarded;
 	end
 	// forward from MEM/WB
-	else if ( (load_regfile_mem_wb == 1'b1) && (rd_mem_wb != 32'b0) && (rd_mem_wb == rs1_id_ex)) begin
+	else if ( (load_regfile_mem_wb == 1'b1) && (rd_mem_wb != 5'b0) && (rd_mem_wb == rs1_id_ex)) begin
 		rs1mux_sel = rs1mux::mem_wb_forwarded;
 	end
 	
-	/********* forwarding for rs1mux *********/
+	/********* forwarding for rs2mux *********/
 
 	// forward from EX/MEM
-	if ( (load_regfile_ex_mem == 1'b1) && (rd_ex_mem != 32'b0) && (rd_ex_mem == rs2_id_ex)) begin
+	if ( (load_regfile_ex_mem == 1'b1) && (rd_ex_mem != 5'b0) && (rd_ex_mem == rs2_id_ex)) begin
 		rs2mux_sel = rs2mux::ex_mem_forwarded;
 	end
 	// forward from MEM/WB
-	else if ( (load_regfile_mem_wb == 1'b1) && (rd_mem_wb != 32'b0) && (rd_mem_wb == rs2_id_ex)) begin
+	else if ( (load_regfile_mem_wb == 1'b1) && (rd_mem_wb != 5'b0) && (rd_mem_wb == rs2_id_ex)) begin
 		rs2mux_sel = rs2mux::mem_wb_forwarded;
+	end
+	
+	// forwarding for wdatamux
+	// related to  loading hazards
+	if ( (mem_write_ex_mem == 1'b1) && (rd_mem_wb == rs2_ex_mem) && (rd_mem_wb != 5'b0) && (load_regfile_mem_wb == 1'b1) ) begin
+		wdatamux_sel = wdatamux::mem_wb_forwarded;
 	end
 	
 	/******** Stalling Logic ***********/
@@ -107,7 +119,7 @@ always_comb begin
 	// check to see if the destination register field of the load in the EX stage matches either source register of the instruction in the ID stage.
 	// If the condition holds, the instruction stalls one clock cycle.
 	// Don't bubble if we have a store-after-load
-	if ( (mem_read_id_ex==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) && (mem_write_if_id == 1'b0) ) begin
+	if ( (mem_read_id_ex==1'b1) && ( (rd_id_ex == rs1_if_id) || (rd_id_ex == rs2_if_id) ) && (mem_write_if_id == 1'b0) ) begin // 
 		stall_pc = 1'b1;
 		stall_if_id = 1'b1;
 		bubble_control = 1'b1;

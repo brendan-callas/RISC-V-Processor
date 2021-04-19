@@ -17,8 +17,12 @@ _start:    # test lui
     and x12, x12, x0
     and x13, x13, x0*/
 
+	lw x12, BADD
+
     lui x12, %hi(BADD)
     lw  x12, %lo(BADD)(x12)
+
+	
 
 
     nop
