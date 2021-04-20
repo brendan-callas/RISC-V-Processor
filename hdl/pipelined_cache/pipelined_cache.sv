@@ -3,7 +3,7 @@ controller, cache datapath, and bus adapter. */
 
 import rv32i_types::*;
 
-module cache #(
+module pipelined_cache #(
     parameter s_offset = 5,
     parameter s_index  = 3,
     parameter s_tag    = 32 - s_offset - s_index,
@@ -73,6 +73,7 @@ logic dirty_o;
 logic lru_out;
 logic hit1;
 logic dirty_sel;
+logic addrmux_sel;
 
 
 // bus adaptor signals
@@ -80,9 +81,9 @@ logic [255:0] mem_wdata256;
 logic [255:0] mem_rdata256;
 logic [31:0] mem_byte_enable256;
 
-cache_control control(.*);
+cache_control_p control(.*);
 
-cache_datapath datapath(.*); 
+cache_datapath_p datapath(.*); 
 
 // A module to help your CPU (which likes to deal with 4 bytes at a time) talk to your cache (which likes to deal with 32 bytes at a time)
 bus_adapter bus_adapter
@@ -96,5 +97,5 @@ bus_adapter bus_adapter
     .address(mem_address)
 );
 
-endmodule : cache
+endmodule : pipelined_cache
 

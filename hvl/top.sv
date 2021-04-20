@@ -69,11 +69,9 @@ logic [3:0] mem_wb_mem_rmask;
 logic [31:0] mem_wb_mem_wdata;
 logic [31:0] mem_wb_mem_rdata;
 
-logic stall_pc;
 
-assign stall_pc = dut.datapath.stall_pc;
 always_ff @(posedge itf.clk) begin
-      if (~stall_pc) begin
+      if (~(dut.datapath.stall_pc)) begin
             ex_mem_rs1_rdata <= dut.datapath.rs1mux_out;
             mem_wb_rs1_rdata <= dut.datapath.rs1mux_out;
             mem_wb_rs2_rdata <= dut.datapath.wdatamux_out;
@@ -95,14 +93,13 @@ end
 
 always_comb begin // rvfi signals
       
-      rvfi.inst = instruction_mem_wb;
+      rvfi.inst = dut.datapath.instruction_mem_wb;
       rvfi.trap = 1'b0;
       rvfi.rs1_addr = dut.datapath.instruction_decoded_mem_wb.rs1;
       rvfi.rs2_addr = dut.datapath.instruction_decoded_mem_wb.rs2;
       rvfi.rs1_rdata = mem_wb_rs1_rdata;
       rvfi.rs2_rdata = mem_wb_rs2_rdata;
-      rvfi.load_regfile = dut.datapath.control_word_mem_wb.load_regfile;
-      rvfi.rd_addr = dut.datapath.instruction_decoded_mem_wb.rd;
+      
       rvfi.rd_wdata = dut.datapath.regfile.in;
       rvfi.pc_rdata = dut.datapath.pc_mem_wb;
       rvfi.pc_wdata = 32'hxxxx;
@@ -114,6 +111,8 @@ always_comb begin // rvfi signals
 	  if (dut.datapath.instruction_decoded_mem_wb.opcode) begin
             rvfi.commit = (~(dut.datapath.stall_mem_wb));
       end else rvfi.commit = 1'b0;
+	  rvfi.load_regfile = dut.datapath.control_word_mem_wb.load_regfile;
+      rvfi.rd_addr = dut.datapath.instruction_decoded_mem_wb.rd;
 
 //     logic [15:0] errcode;
 end

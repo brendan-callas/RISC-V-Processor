@@ -1,5 +1,4 @@
-
-module way
+module way_p
 (
     input clk,
     input rst,
@@ -54,7 +53,7 @@ reg_array #(.s_index(3), .width(24)) tag_array(
     .dataout(tag_o)
 );
 
-data_array data_array(
+data_array_p data_array(
 	.clk(clk),
 	.rst(rst),
 	.read(read_cache_data_i),
@@ -65,25 +64,4 @@ data_array data_array(
 	.dataout(data_o)
 );
 
-endmodule : way
-
-//********** Comparator ************//
-module comparator #(
-    parameter width = 24
-)
-(
-    input logic [width-1:0] a,
-	input logic [width-1:0] b,
-	output logic f
-);
-
-always_comb begin
-
-	if(a == b) begin
-		f = 1'b1;
-	end
-	else f = 1'b0;
-	
-end
-
-endmodule : comparator
+endmodule : way_p

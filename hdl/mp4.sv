@@ -151,7 +151,7 @@ cache inst_cache (
   .mem_rdata(inst_rdata)
 );
 
-cache data_cache (
+pipelined_cache data_cache (
   .clk(clk),
   .rst(rst),
 

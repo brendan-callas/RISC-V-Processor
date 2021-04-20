@@ -193,7 +193,7 @@ mem_wb_regs mem_wb_regs(
 	.control_word_i(control_word_ex_mem),
 	.alu_out_i(alu_out_ex_mem),
 	.br_en_i(br_en_extended),
-	.mem_data_out_i(data_mem_rdata),
+	.mem_data_out_i(data_mem_rdata), //this signal is bypassing this stage due to pipelined cache, but leaving here anyway
     .pc_o(pc_mem_wb),
 	.instruction_o(instruction_mem_wb),
 	.instruction_decoded_o(instruction_decoded_mem_wb),
@@ -348,37 +348,37 @@ always_comb begin : MUXES
 	case ( alu_out_mem_wb[1:0] )
 	
 		2'b00: begin
-			lb = { {24{mem_data_out_mem_wb[7]}}, mem_data_out_mem_wb[7:0] };
-			lbu = { 24'b0, mem_data_out_mem_wb[7:0] };
-			lh = { {16{mem_data_out_mem_wb[15]}}, mem_data_out_mem_wb[15:0] };
-			lhu = { 16'b0, mem_data_out_mem_wb[15:0] };
+			lb = { {24{data_mem_rdata[7]}}, data_mem_rdata[7:0] };
+			lbu = { 24'b0, data_mem_rdata[7:0] };
+			lh = { {16{data_mem_rdata[15]}}, data_mem_rdata[15:0] };
+			lhu = { 16'b0, data_mem_rdata[15:0] };
 			
 			
 		end
 		
 		2'b01: begin
-			lb = { {24{mem_data_out_mem_wb[15]}}, mem_data_out_mem_wb[15:8] };
-			lbu = { 24'b0, mem_data_out_mem_wb[15:8] };
-			lh = { {16{mem_data_out_mem_wb[15]}}, mem_data_out_mem_wb[23:8] }; // this is probably undefined for half word
-			lhu = { 16'b0, mem_data_out_mem_wb[23:8] };
+			lb = { {24{data_mem_rdata[15]}}, data_mem_rdata[15:8] };
+			lbu = { 24'b0, data_mem_rdata[15:8] };
+			lh = { {16{data_mem_rdata[15]}}, data_mem_rdata[23:8] }; // this is probably undefined for half word
+			lhu = { 16'b0, data_mem_rdata[23:8] };
 			
 			
 		end
 		
 		2'b10: begin 
-			lb = { {24{mem_data_out_mem_wb[23]}}, mem_data_out_mem_wb[23:16] };
-			lbu = { 24'b0, mem_data_out_mem_wb[23:16] };
-			lh = { {16{mem_data_out_mem_wb[31]}}, mem_data_out_mem_wb[31:16] };
-			lhu = { 16'b0, mem_data_out_mem_wb[31:16] };
+			lb = { {24{data_mem_rdata[23]}}, data_mem_rdata[23:16] };
+			lbu = { 24'b0, data_mem_rdata[23:16] };
+			lh = { {16{data_mem_rdata[31]}}, data_mem_rdata[31:16] };
+			lhu = { 16'b0, data_mem_rdata[31:16] };
 			
 			
 		end
 		
 		2'b11: begin
-			lb = { {24{mem_data_out_mem_wb[31]}}, mem_data_out_mem_wb[31:24] };
-			lbu = { 24'b0, mem_data_out_mem_wb[31:24] };
-			lh = { {16{mem_data_out_mem_wb[31]}}, mem_data_out_mem_wb[31:16] };
-			lhu = { 16'b0, mem_data_out_mem_wb[31:16] };
+			lb = { {24{data_mem_rdata[31]}}, data_mem_rdata[31:24] };
+			lbu = { 24'b0, data_mem_rdata[31:24] };
+			lh = { {16{data_mem_rdata[31]}}, data_mem_rdata[31:16] };
+			lhu = { 16'b0, data_mem_rdata[31:16] };
 		end
 	endcase
 	
@@ -431,7 +431,7 @@ always_comb begin : MUXES
 		regfilemux::alu_out: regfilemux_out = alu_out_mem_wb;
 		regfilemux::br_en: regfilemux_out = br_en_mem_wb;
 		regfilemux::u_imm: regfilemux_out = instruction_decoded_mem_wb.u_imm;
-		regfilemux::lw: regfilemux_out = mem_data_out_mem_wb;
+		regfilemux::lw: regfilemux_out = data_mem_rdata;
 		regfilemux::pc_plus4: regfilemux_out = pc_mem_wb + 4;
 		regfilemux::lb: regfilemux_out = lb;
 		regfilemux::lbu: regfilemux_out = lbu;
