@@ -13,6 +13,7 @@ module pipelined_cache_regs
 	input rv32i_word address_i,		// from cpu
 	input logic hit1_i,
 	input logic lru_i,
+	input logic mem_write_i,
 	
 	
 	output logic [255:0] mem_rdata_o, // to cpu
@@ -21,7 +22,8 @@ module pipelined_cache_regs
 	output logic dirty_o,          // to control
 	output rv32i_word address_o,    // to cache (mux)
 	output logic hit1_o,
-	output logic lru_o
+	output logic lru_o,
+	output logic mem_write_o
 );
 
 // internal registers
@@ -32,6 +34,7 @@ logic dirty;
 rv32i_word address;
 logic hit1;
 logic lru;
+logic mem_write;
 
 always_ff @(posedge clk)
 begin
@@ -44,6 +47,7 @@ begin
 		address <= '0;
 		hit1 <= '0;
 		lru <= '0;
+		mem_write <= '0;
     end
     else if (load)
     begin
@@ -54,6 +58,7 @@ begin
 		address <= address_i;
 		hit1 <= hit1_i;
 		lru <= lru_i;
+		mem_write <= mem_write_i;
     end
     else
     begin
@@ -64,6 +69,7 @@ begin
 		address <= address;
 		hit1 <= hit1;
 		lru <= lru;
+		mem_write <= mem_write;
     end
 end
 
@@ -76,6 +82,7 @@ begin
 	address_o = address;
 	hit1_o = hit1;
 	lru_o = lru;
+	mem_write_o = mem_write;
 end
 
 endmodule : pipelined_cache_regs

@@ -90,6 +90,7 @@ logic [31:0] mem_address_internal;
 
 
 logic [31:0] addrmux_out;
+logic mem_write_prev;
 
 
 
@@ -113,6 +114,7 @@ pipelined_cache_regs cache_regs
 	.lru_i(lru_out_internal),
 	.hit1_i(hit1),
 	.address_i(mem_address),
+	.mem_write_i(mem_write),
 	
 	
 	.mem_rdata_o(cacheline_data_out),
@@ -121,7 +123,8 @@ pipelined_cache_regs cache_regs
 	.dirty_o(dirty_o_prev),
 	.lru_o(lru_out),
 	.hit1_o(hit1_prev),
-	.address_o(mem_address_internal)
+	.address_o(mem_address_internal),
+	.mem_write_o(mem_write_prev)
 );
 
 
@@ -138,9 +141,9 @@ always_comb begin : MUXES
 
 	// data source mux
 	unique case (source_sel)
-		1'b0: data_source_mux_out = mem_wdata256_internal; //cpu_data
+		1'b0: data_source_mux_out = mem_wdata256; //cpu_data // USE INTERNAL??
 		1'b1: data_source_mux_out = data_from_mem; //mem_data;
-		default: data_source_mux_out = mem_wdata256_internal; //cpu_data
+		default: data_source_mux_out = mem_wdata256; //cpu_data
 	endcase
 	
 	// byte enable mux
@@ -234,7 +237,7 @@ way_p way0(
 	.data_i(data_source_mux_out),
 	.byte_enable_i(byte_enable_masked0),
 	.load_i(load_way0),
-	.mem_write_i(mem_write),
+	.mem_write_i(mem_write_prev),
 	.tag_i(mem_addr_tag),
 	.read_cache_data_i(1'b1),
 	.load_dirty(load_dirty0),
@@ -253,7 +256,7 @@ way_p way1(
 	.data_i(data_source_mux_out),
 	.byte_enable_i(byte_enable_masked1),
 	.load_i(load_way1),
-	.mem_write_i(mem_write),
+	.mem_write_i(mem_write_prev),
 	.tag_i(mem_addr_tag),
 	.read_cache_data_i(1'b1),
 	.load_dirty(load_dirty1),
