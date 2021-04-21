@@ -14,6 +14,10 @@ module pipelined_cache_regs
 	input logic hit1_i,
 	input logic lru_i,
 	input logic mem_write_i,
+	input logic load_cache_i,
+	input logic [31:0] byte_enable_masked0_i,
+	input logic [31:0] byte_enable_masked1_i,
+	input logic [2:0] set_i,
 	
 	
 	output logic [255:0] mem_rdata_o, // to cpu
@@ -23,7 +27,11 @@ module pipelined_cache_regs
 	output rv32i_word address_o,    // to cache (mux)
 	output logic hit1_o,
 	output logic lru_o,
-	output logic mem_write_o
+	output logic mem_write_o,
+	output logic load_cache_o,
+	output logic [31:0] byte_enable_masked0_o,
+	output logic [31:0] byte_enable_masked1_o,
+	output logic [2:0] set_o
 );
 
 // internal registers
@@ -35,6 +43,10 @@ rv32i_word address;
 logic hit1;
 logic lru;
 logic mem_write;
+logic load_cache;
+logic [31:0] byte_enable_masked0;
+logic [31:0] byte_enable_masked1;
+logic [2:0] set;
 
 always_ff @(posedge clk)
 begin
@@ -48,6 +60,10 @@ begin
 		hit1 <= '0;
 		lru <= '0;
 		mem_write <= '0;
+		load_cache <= '0;
+		byte_enable_masked0 <= '0;
+		byte_enable_masked1 <= '0;
+		set <= '0;
     end
     else if (load)
     begin
@@ -59,6 +75,10 @@ begin
 		hit1 <= hit1_i;
 		lru <= lru_i;
 		mem_write <= mem_write_i;
+		load_cache <= load_cache_i;
+		byte_enable_masked0 <= byte_enable_masked0_i;
+		byte_enable_masked1 <= byte_enable_masked1_i;
+		set <= set_i;
     end
     else
     begin
@@ -70,6 +90,10 @@ begin
 		hit1 <= hit1;
 		lru <= lru;
 		mem_write <= mem_write;
+		load_cache <= load_cache;
+		byte_enable_masked0 <= byte_enable_masked0;
+		byte_enable_masked1 <= byte_enable_masked1;
+		set <= set;
     end
 end
 
@@ -83,6 +107,10 @@ begin
 	hit1_o = hit1;
 	lru_o = lru;
 	mem_write_o = mem_write;
+	load_cache_o = load_cache;
+	byte_enable_masked0_o = byte_enable_masked0;
+	byte_enable_masked1_o = byte_enable_masked1;
+	set_o = set;
 end
 
 endmodule : pipelined_cache_regs

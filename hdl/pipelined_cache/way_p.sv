@@ -3,7 +3,8 @@ module way_p
     input clk,
     input rst,
 	
-	input logic [2:0] index_i,
+	input logic [2:0] rindex_i,
+	input logic [2:0] windex_i,
 	input logic [255:0] data_i,
 	input logic [31:0] byte_enable_i,
 	input logic load_i,
@@ -24,7 +25,7 @@ reg_array #(.s_index(3), .width(1)) valid_array(
 	.clk(clk),
     .rst(rst),
     .load(load_i),
-    .index(index_i),
+    .index(rindex_i),
     .datain(1'b1),	// 1 because the valid bit can never change from 1 to 0 (I think).
     .dataout(valid_o)
 );
@@ -36,7 +37,7 @@ reg_array #(.s_index(3), .width(1)) dirty_array(
     .load(load_dirty),
     //.rindex(index_i),
     //.windex(index_i),
-	.index(index_i),
+	.index(rindex_i),
     .datain(mem_write_i), // if we are writing, then the data becomes dirty. This will also be loaded with 0 if read and evict. (write and evict should still load 1).
     .dataout(dirty_o)
 );
@@ -48,7 +49,7 @@ reg_array #(.s_index(3), .width(24)) tag_array(
     .load(load_i),
     //.rindex(index_i),
     //.windex(index_i),
-	.index(index_i),
+	.index(rindex_i),
     .datain(tag_i),
     .dataout(tag_o)
 );
@@ -58,8 +59,8 @@ data_array_p data_array(
 	.rst(rst),
 	.read(read_cache_data_i),
 	.write_en(byte_enable_i),
-	.rindex(index_i),
-	.windex(index_i),
+	.rindex(rindex_i),
+	.windex(windex_i),
 	.datain(data_i),
 	.dataout(data_o)
 );

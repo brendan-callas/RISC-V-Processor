@@ -91,6 +91,16 @@ logic [31:0] mem_address_internal;
 
 logic [31:0] addrmux_out;
 logic mem_write_prev;
+logic load_cache_prev;
+
+// used for writes
+logic [31:0] byte_enable_masked0_prev;
+logic [31:0] byte_enable_masked1_prev;
+logic [2:0] set_prev;
+
+logic [31:0] byte_enable_way0;
+logic [31:0] byte_enable_way1;
+logic [2:0] set_w;
 
 
 
@@ -115,6 +125,10 @@ pipelined_cache_regs cache_regs
 	.hit1_i(hit1),
 	.address_i(mem_address),
 	.mem_write_i(mem_write),
+	.load_cache_i(load_cache),
+	.byte_enable_masked0_i(byte_enable_masked0),
+	.byte_enable_masked1_i(byte_enable_masked1),
+	.set_i(set),
 	
 	
 	.mem_rdata_o(cacheline_data_out),
@@ -124,7 +138,11 @@ pipelined_cache_regs cache_regs
 	.lru_o(lru_out),
 	.hit1_o(hit1_prev),
 	.address_o(mem_address_internal),
-	.mem_write_o(mem_write_prev)
+	.mem_write_o(mem_write_prev),
+	.load_cache_o(load_cache_prev),
+	.byte_enable_masked0_o(byte_enable_masked0_prev),
+	.byte_enable_masked1_o(byte_enable_masked1_prev),
+	.set_o(set_prev)
 );
 
 
@@ -226,6 +244,28 @@ always_comb begin : MUXES
 	end
 	else byte_enable_masked1 = 32'b0;
 	
+	// attempting mux for mem byte enable
+	unique case (mem_write)
+		1'b0: begin
+			byte_enable_way0 = byte_enable_masked0;
+			byte_enable_way1 = byte_enable_masked1;
+			
+			set_w = set;
+		end
+		1'b1: begin
+			byte_enable_way0 = byte_enable_masked0_prev;
+			byte_enable_way1 = byte_enable_masked1_prev;
+			
+			set_w = set_prev;
+		end
+		default: begin
+			byte_enable_way0 = byte_enable_masked0;
+			byte_enable_way1 = byte_enable_masked1;
+			
+			set_w = set;
+		end
+	endcase
+	
 	
 end
 
@@ -233,9 +273,10 @@ way_p way0(
 	.clk(clk),
     .rst(rst),
 	
-	.index_i(set),
+	.rindex_i(set),
+	.windex_i(set_w),
 	.data_i(data_source_mux_out),
-	.byte_enable_i(byte_enable_masked0),
+	.byte_enable_i(byte_enable_way0),
 	.load_i(load_way0),
 	.mem_write_i(mem_write_prev),
 	.tag_i(mem_addr_tag),
@@ -252,9 +293,10 @@ way_p way1(
 	.clk(clk),
     .rst(rst),
 	
-	.index_i(set),
+	.rindex_i(set),
+	.windex_i(set_w),
 	.data_i(data_source_mux_out),
-	.byte_enable_i(byte_enable_masked1),
+	.byte_enable_i(byte_enable_way1),
 	.load_i(load_way1),
 	.mem_write_i(mem_write_prev),
 	.tag_i(mem_addr_tag),
