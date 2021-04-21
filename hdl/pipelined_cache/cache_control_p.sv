@@ -151,7 +151,7 @@ begin : next_state_logic
 				end
 				
 				if( (mem_read | mem_write) & cache_hit) begin
-					next_state = s_idle; //respond_to_cpu
+					next_state = s_respond_to_cpu;
 				end
 			end
 			
@@ -169,7 +169,7 @@ begin : next_state_logic
 			end
 			
 			s_load_data_into_cache: begin
-				next_state = s_load_data_into_cache_2;
+				next_state = s_respond_to_cpu; //s_load_data_into_cache_2;
 			end
 			
 			s_load_data_into_cache_2: begin

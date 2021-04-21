@@ -81,12 +81,14 @@ logic [255:0] mem_wdata256;
 logic [255:0] mem_rdata256;
 logic [31:0] mem_byte_enable256;
 
+logic [31:0] prev_address; // used for bus adaptor
+
 cache_control_p control(.*);
 
 cache_datapath_p datapath(.*); 
 
 // A module to help your CPU (which likes to deal with 4 bytes at a time) talk to your cache (which likes to deal with 32 bytes at a time)
-bus_adapter bus_adapter
+bus_adapter bus_adapter_p
 (
 	.mem_wdata256(mem_wdata256),
     .mem_rdata256(cacheline_data_out),
@@ -94,7 +96,7 @@ bus_adapter bus_adapter
     .mem_rdata(mem_rdata),
     .mem_byte_enable(mem_byte_enable),
     .mem_byte_enable256(mem_byte_enable256),
-    .address(mem_address)
+    .address(prev_address)
 );
 
 endmodule : pipelined_cache

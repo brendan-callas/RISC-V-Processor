@@ -44,7 +44,10 @@ module cache_datapath_p #(
 	output logic cache_hit,
 	output logic dirty_o,
 	output logic lru_out,
-	output logic hit1
+	output logic hit1,
+	
+	// to busline adaptor
+	output logic [31:0] prev_address
 );
 
 // Internal Signals
@@ -94,6 +97,8 @@ logic [31:0] addrmux_out;
 assign mem_addr_tag = addrmux_out[31:8];
 assign set = addrmux_out[7:5];
 assign address_to_mem = {tag_mux_out, addrmux_out[7:5], 5'b0}; //Still need to get specific 32-byte block, so use mem_addr[7:5]; align to 32-byte blocks
+assign prev_address = mem_address_internal;
+
 
 pipelined_cache_regs cache_regs
 (
