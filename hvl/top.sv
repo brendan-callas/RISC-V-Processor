@@ -95,7 +95,7 @@ end
 
 always_comb begin // rvfi signals
       
-      rvfi.inst = instruction_mem_wb;
+      rvfi.inst = dut.datapath.instruction_mem_wb;
       rvfi.trap = 1'b0;
       rvfi.rs1_addr = dut.datapath.instruction_decoded_mem_wb.rs1;
       rvfi.rs2_addr = dut.datapath.instruction_decoded_mem_wb.rs2;
