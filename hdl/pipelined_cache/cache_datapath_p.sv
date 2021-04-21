@@ -108,19 +108,19 @@ pipelined_cache_regs cache_regs
     
 	.mem_rdata_i(cacheline_data_out_internal),
 	.mem_wdata_i(mem_wdata256),
-	.hit_i(cache_hit_internal),
-	.dirty_i(dirty_o_internal),
+	.hit_i(cache_hit),
+	.dirty_i(dirty_o),
 	.lru_i(lru_out_internal),
-	.hit1_i(hit1_internal),
+	.hit1_i(hit1),
 	.address_i(mem_address),
 	
 	
 	.mem_rdata_o(cacheline_data_out),
 	.mem_wdata_o(mem_wdata256_internal),
-	.hit_o(cache_hit),
-	.dirty_o(dirty_o),
+	.hit_o(cache_hit_prev),
+	.dirty_o(dirty_o_prev),
 	.lru_o(lru_out),
-	.hit1_o(hit1),
+	.hit1_o(hit1_prev),
 	.address_o(mem_address_internal)
 );
 
@@ -173,9 +173,9 @@ always_comb begin : MUXES
 	
 	// dirty bit out mux
 	unique case (lru_out_internal) // dirty_sel = lru_out, don't want to use delayed version
-		1'b0: dirty_o_internal = dirty0;
-		1'b1: dirty_o_internal = dirty1;
-		default: dirty_o_internal = dirty0;
+		1'b0: dirty_o = dirty0;
+		1'b1: dirty_o = dirty1;
+		default: dirty_o = dirty0;
 	endcase
 
 	
@@ -208,9 +208,9 @@ always_comb begin : MUXES
 	//other comb logic
 	
 	hit0 = (comparator0_o & valid0);
-	hit1_internal = (comparator1_o & valid1);
+	hit1 = (comparator1_o & valid1);
 	
-	cache_hit_internal = (hit0 | hit1_internal);
+	cache_hit = (hit0 | hit1);
 	
 	//if we are not loading the cache, we do not want to enable writing over any bytes (since the data_array does not have a load signal)
 	if(load_way0) begin
