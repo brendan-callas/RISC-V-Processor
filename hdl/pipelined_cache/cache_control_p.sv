@@ -37,10 +37,10 @@ module cache_control_p (
 enum int unsigned {
     /* List of states */
 	s_idle,
+	s_miss,
 	s_write_back,
 	s_load_data_from_mem,
 	s_load_data_into_cache,
-	s_load_data_into_cache_2,
 	s_respond_to_cpu
 	
 } state, next_state;
@@ -79,6 +79,13 @@ begin : state_actions
 			end
 		end
 		
+		// have a state for checking dirty bit
+		s_miss: begin
+			way_sel = lru_out; //should this be changed since data from cacheline is delayed a cycle? (set this in prev state)
+			tag_sel = 1'b1;
+			addrmux_sel = 1'b1; // previous address
+		end
+		
 		
 		s_write_back: begin
 			write_to_mem = 1'b1;
@@ -100,15 +107,6 @@ begin : state_actions
 			way_sel = lru_out; //replace least recently used
 			load_dirty = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
 			addrmux_sel = 1'b1; // previous address
-		end
-		
-		//extra stage here to get data into regs
-		s_load_data_into_cache_2: begin
-			way_sel = hit1; // redundant since this is default; keeping it here anyway for now
-			//load_lru = 1'b1; // lru will load way_sel into the respective index
-			//load_cache = mem_write; // want to load cache if we are writing;
-			//if(mem_write) load_dirty = 1'b1;
-			addrmux_sel = 1'b1; // prev
 		end
 		
 		s_respond_to_cpu: begin
@@ -143,15 +141,25 @@ begin : next_state_logic
 		
 			s_idle: begin
 				if( (mem_read | mem_write) & ~cache_hit & dirty_o) begin
-					next_state = s_write_back;
+					next_state = s_miss;
 				end
 				
 				else if( (mem_read | mem_write) & ~cache_hit & ~dirty_o) begin
-					next_state = s_load_data_from_mem;
+					next_state = s_miss;
 				end
 				
 				if( (mem_read | mem_write) & cache_hit) begin
 					next_state = s_respond_to_cpu;
+				end
+			end
+			
+			s_miss: begin
+				if(dirty_o) begin
+					next_state = s_write_back;
+				end
+				
+				else begin
+					next_state = s_load_data_from_mem;
 				end
 			end
 			
@@ -172,18 +180,14 @@ begin : next_state_logic
 				next_state = s_respond_to_cpu; //s_load_data_into_cache_2;
 			end
 			
-			s_load_data_into_cache_2: begin
-				next_state = s_respond_to_cpu;
-			end
-			
 			s_respond_to_cpu: begin
 			
 				if( (mem_read | mem_write) & ~cache_hit & dirty_o) begin
-					next_state = s_write_back;
+					next_state = s_miss; //s_write_back;
 				end
 				
 				else if( (mem_read | mem_write) & ~cache_hit & ~dirty_o) begin
-					next_state = s_load_data_from_mem;
+					next_state = s_miss; //s_load_data_from_mem;
 				end
 				
 				if( (mem_read | mem_write) & cache_hit) begin

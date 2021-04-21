@@ -172,7 +172,7 @@ always_comb begin : MUXES
 	endcase
 	
 	// dirty bit out mux
-	unique case (dirty_sel)
+	unique case (lru_out_internal) // dirty_sel = lru_out, don't want to use delayed version
 		1'b0: dirty_o_internal = dirty0;
 		1'b1: dirty_o_internal = dirty1;
 		default: dirty_o_internal = dirty0;
