@@ -80,10 +80,10 @@ logic comparator1_o;
 
 //between output of cache itself and input of regs
 logic [255:0] cacheline_data_out_internal;
-logic cache_hit_internal;
-logic dirty_o_internal;
+logic cache_hit_prev;
+logic dirty_o_prev;
 logic lru_out_internal;
-logic hit1_internal;
+logic hit1_prev;
  // from cpu, feeds back into cache
 logic [255:0] mem_wdata256_internal;
 logic [31:0] mem_address_internal;
@@ -245,7 +245,7 @@ always_comb begin : MUXES
 	else byte_enable_masked1 = 32'b0;
 	
 	// attempting mux for mem byte enable
-	unique case (mem_write)
+	unique case (mem_write_prev)
 		1'b0: begin
 			byte_enable_way0 = byte_enable_masked0;
 			byte_enable_way1 = byte_enable_masked1;
@@ -253,10 +253,10 @@ always_comb begin : MUXES
 			set_w = set;
 		end
 		1'b1: begin
-			byte_enable_way0 = byte_enable_masked0_prev;
-			byte_enable_way1 = byte_enable_masked1_prev;
+			byte_enable_way0 = byte_enable_masked0;
+			byte_enable_way1 = byte_enable_masked1;
 			
-			set_w = set_prev;
+			set_w = set;
 		end
 		default: begin
 			byte_enable_way0 = byte_enable_masked0;

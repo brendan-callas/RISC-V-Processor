@@ -44,8 +44,7 @@ begin
     else begin
         if (read)
             for (int i = 0; i < s_mask; i++)
-                _dataout[8*i +: 8] <= (write_en[i] & (rindex == windex)) ?
-                                      datain[8*i +: 8] : data[rindex][8*i +: 8];
+                _dataout[8*i +: 8] <= (write_en[i] & (rindex == windex)) ? datain[8*i +: 8] : data[rindex][8*i +: 8];
 
         for (int i = 0; i < s_mask; i++)
         begin
