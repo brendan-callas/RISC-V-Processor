@@ -114,7 +114,6 @@ logic [31:0] stall32;
 assign mem_addr_tag = addrmux_out[31:8];
 assign set = addrmux_out[7:5];
 assign address_to_mem = {tag_mux_out, addrmux_out[7:5], 5'b0}; //Still need to get specific 32-byte block, so use mem_addr[7:5]; align to 32-byte blocks
-assign prev_address = mem_address_internal;
 
 assign stall32 = {32{stall}};
 
@@ -123,7 +122,7 @@ pipelined_cache_regs cache_regs
 (
     .clk(clk),
     .rst(rst),
-    .load(~stall),
+    .load(~stall | ~cache_hit),
     
 	.mem_rdata_i(cacheline_data_out_internal),
 	.mem_wdata_i(mem_wdata256),
@@ -146,7 +145,7 @@ pipelined_cache_regs cache_regs
 	.dirty_o(dirty_o_prev),
 	.lru_o(lru_out),
 	.hit1_o(hit1_prev),
-	.address_o(mem_address_internal),
+	.address_o(prev_address),
 	.mem_write_o(mem_write_prev),
 	.load_cache_o(load_cache_prev),
 	.byte_enable_masked0_o(byte_enable_masked0_prev),
@@ -164,7 +163,7 @@ always_comb begin : MUXES
 	// address mux
 	unique case (addrmux_sel)
 		1'b0: addrmux_out = mem_address;
-		1'b1: addrmux_out = mem_address_internal; // "previous" addr from regs
+		1'b1: addrmux_out = prev_address; // "previous" addr from regs
 		default: addrmux_out = mem_address;
 	endcase
 

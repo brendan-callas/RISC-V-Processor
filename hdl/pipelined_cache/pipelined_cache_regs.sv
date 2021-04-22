@@ -109,7 +109,9 @@ end
 
 always_comb
 begin
-    mem_rdata_o = mem_rdata;
+	if(~stall)
+		mem_rdata_o = mem_rdata_i;
+	else mem_rdata_o = mem_rdata;
 	mem_wdata_o = mem_wdata;
 	hit_o = hit;
 	dirty_o = dirty;
