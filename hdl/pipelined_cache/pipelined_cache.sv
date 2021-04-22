@@ -30,7 +30,9 @@ module pipelined_cache #(
     output logic [31:0] pmem_address,
     output logic pmem_read,
     output logic pmem_write,
-    input logic pmem_resp
+    input logic pmem_resp,
+	
+	input logic stall
 	
 	
 );

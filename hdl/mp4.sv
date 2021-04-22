@@ -53,6 +53,8 @@ logic read_from_mem;
 logic write_to_mem;
 logic resp_from_mem;
 
+logic inst_stall;
+
 	
 datapath datapath(
 
@@ -73,7 +75,9 @@ datapath datapath(
 	.data_mem_address(data_addr),
 	.data_mem_wdata(data_wdata),
 	.data_mem_resp(data_resp),
-	.data_mem_rdata(data_rdata)	
+	.data_mem_rdata(data_rdata),
+	
+	.inst_stall(inst_stall)
 
 );
 
@@ -170,7 +174,9 @@ pipelined_cache data_cache (
   .mem_address(data_addr),
   .mem_wdata(data_wdata),
   .mem_resp(data_resp),
-  .mem_rdata(data_rdata)
+  .mem_rdata(data_rdata),
+  
+  .stall(inst_stall)
 );
 
 

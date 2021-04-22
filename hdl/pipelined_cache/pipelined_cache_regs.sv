@@ -18,6 +18,7 @@ module pipelined_cache_regs
 	input logic [31:0] byte_enable_masked0_i,
 	input logic [31:0] byte_enable_masked1_i,
 	input logic [2:0] set_i,
+	input logic stall_i,
 	
 	
 	output logic [255:0] mem_rdata_o, // to cpu
@@ -31,7 +32,9 @@ module pipelined_cache_regs
 	output logic load_cache_o,
 	output logic [31:0] byte_enable_masked0_o,
 	output logic [31:0] byte_enable_masked1_o,
-	output logic [2:0] set_o
+	output logic [2:0] set_o,
+	output logic stall_o,
+	output logic stall2_o
 );
 
 // internal registers
@@ -47,6 +50,8 @@ logic load_cache;
 logic [31:0] byte_enable_masked0;
 logic [31:0] byte_enable_masked1;
 logic [2:0] set;
+logic stall;
+logic stall2;
 
 always_ff @(posedge clk)
 begin
@@ -64,14 +69,15 @@ begin
 		byte_enable_masked0 <= '0;
 		byte_enable_masked1 <= '0;
 		set <= '0;
+		stall <= '0;
     end
     else if (load)
     begin
-        mem_rdata <= mem_rdata_i;
+		mem_rdata <= mem_rdata_i;
 		mem_wdata <= mem_wdata_i;
+		address <= address_i;
 		hit <= hit_i;
 		dirty <= dirty_i;
-		address <= address_i;
 		hit1 <= hit1_i;
 		lru <= lru_i;
 		mem_write <= mem_write_i;
@@ -79,12 +85,14 @@ begin
 		byte_enable_masked0 <= byte_enable_masked0_i;
 		byte_enable_masked1 <= byte_enable_masked1_i;
 		set <= set_i;
+		stall <= stall_i;
+		stall2 <= stall;
     end
     else
     begin
         mem_rdata <= mem_rdata;
 		mem_wdata <= mem_wdata;
-		hit <= hit;
+		hit <= hit_i;
 		dirty <= dirty;
 		address <= address;
 		hit1 <= hit1;
@@ -94,6 +102,8 @@ begin
 		byte_enable_masked0 <= byte_enable_masked0;
 		byte_enable_masked1 <= byte_enable_masked1;
 		set <= set;
+		stall <= stall_i; //dont want to stall the stall signal
+		stall2 <= stall;
     end
 end
 
@@ -111,6 +121,8 @@ begin
 	byte_enable_masked0_o = byte_enable_masked0;
 	byte_enable_masked1_o = byte_enable_masked1;
 	set_o = set;
+	stall_o = stall;
+	stall2_o = stall2;
 end
 
 endmodule : pipelined_cache_regs

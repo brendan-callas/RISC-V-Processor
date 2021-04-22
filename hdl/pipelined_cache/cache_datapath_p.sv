@@ -25,6 +25,8 @@ module cache_datapath_p #(
     input rv32i_word mem_address,
     input logic [255:0] mem_wdata256,
 	
+	input logic stall,
+	
 	// port to cacheline adaptor (to memory)
 	output logic [255:0] cacheline_data_out,
     input logic [255:0] data_from_mem,
@@ -102,6 +104,10 @@ logic [31:0] byte_enable_way0;
 logic [31:0] byte_enable_way1;
 logic [2:0] set_w;
 
+logic stall_prev;
+logic stall2;
+logic [31:0] stall32;
+
 
 
 
@@ -110,12 +116,14 @@ assign set = addrmux_out[7:5];
 assign address_to_mem = {tag_mux_out, addrmux_out[7:5], 5'b0}; //Still need to get specific 32-byte block, so use mem_addr[7:5]; align to 32-byte blocks
 assign prev_address = mem_address_internal;
 
+assign stall32 = {32{stall}};
+
 
 pipelined_cache_regs cache_regs
 (
     .clk(clk),
     .rst(rst),
-    .load(1'b1),
+    .load(~stall),
     
 	.mem_rdata_i(cacheline_data_out_internal),
 	.mem_wdata_i(mem_wdata256),
@@ -129,6 +137,7 @@ pipelined_cache_regs cache_regs
 	.byte_enable_masked0_i(byte_enable_masked0),
 	.byte_enable_masked1_i(byte_enable_masked1),
 	.set_i(set),
+	.stall_i(stall),
 	
 	
 	.mem_rdata_o(cacheline_data_out),
@@ -142,7 +151,9 @@ pipelined_cache_regs cache_regs
 	.load_cache_o(load_cache_prev),
 	.byte_enable_masked0_o(byte_enable_masked0_prev),
 	.byte_enable_masked1_o(byte_enable_masked1_prev),
-	.set_o(set_prev)
+	.set_o(set_prev),
+	.stall_o(stall_prev),
+	.stall2_o(stall2)
 );
 
 

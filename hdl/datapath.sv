@@ -16,7 +16,8 @@ module datapath
     output logic [3:0] mem_byte_enable,
     output rv32i_word inst_mem_address,
 	output rv32i_word data_mem_address,
-    output rv32i_word data_mem_wdata
+    output rv32i_word data_mem_wdata,
+	output logic inst_stall
 );
 
 
@@ -290,7 +291,9 @@ forward_hazard forward_hazard_module(
 	.stall_id_ex(stall_id_ex),
 	.stall_ex_mem(stall_ex_mem),
 	.stall_mem_wb(stall_mem_wb),
-	.bubble_control(bubble_control)
+	.bubble_control(bubble_control),
+	
+	.inst_stall(inst_stall)
 );
 
 // Mux Selects

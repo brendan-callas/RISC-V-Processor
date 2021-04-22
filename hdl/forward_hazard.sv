@@ -39,8 +39,9 @@ module forward_hazard(
 	output logic stall_id_ex, // don't load registers
 	output logic stall_ex_mem, // don't load EX/MEM registers. Still want to assert mem_read/mem_write (if stalling due to a cache miss)
 	output logic stall_mem_wb, // don't load MEM/WB registers . Probably set load_regfile=0, although this probably doesn't actually make a difference
-	output logic bubble_control // override control word with 0s (make a bubble)
+	output logic bubble_control, // override control word with 0s (make a bubble)
 	
+	output logic inst_stall
 
 );
 
@@ -111,6 +112,11 @@ always_comb begin
 		stall_ex_mem = 1'b1;
 		stall_mem_wb = 1'b1;
 	end
+	
+	if ( (inst_mem_read==1'b1) && (inst_mem_resp==1'b0) ) begin
+		inst_stall = 1'b1;
+	end
+	else inst_stall = 1'b0;
 		
 
 	  
