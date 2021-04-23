@@ -91,14 +91,12 @@ begin
 		stall <= stall_i;
 		stall2 <= stall;
 		
-		if(~stall) begin
+		if(~stall_i) begin
 			mem_wdata <= mem_wdata_i;
 			address <= address_i;
-			addrmux_out <= addrmux_out_i;
 		end
-		
-		if(hit_o) begin
-			
+		if(~stall_o) begin
+			addrmux_out <= addrmux_out_i;
 		end
 		
     end
@@ -116,7 +114,7 @@ begin
 		byte_enable_masked0 <= byte_enable_masked0;
 		byte_enable_masked1 <= byte_enable_masked1;
 		set <= set;
-		stall <= stall_i; //dont want to stall the stall signal
+		stall <= stall;
 		stall2 <= stall;
 		addrmux_out <= addrmux_out;
     end
