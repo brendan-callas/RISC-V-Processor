@@ -76,6 +76,7 @@ logic lru_out;
 logic hit1;
 logic dirty_sel;
 logic addrmux_sel;
+logic stall_regs;
 
 
 // bus adaptor signals
@@ -83,7 +84,8 @@ logic [255:0] mem_wdata256;
 logic [255:0] mem_rdata256;
 logic [31:0] mem_byte_enable256;
 
-logic [31:0] prev_address; // used for bus adaptor
+logic [31:0] addrmux_out; // used for bus adaptor
+logic [31:0] addrmux_out_prev; // used for bus adaptor
 
 cache_control_p control(.*);
 
@@ -98,8 +100,8 @@ bus_adapter_p bus_adapter_p
     .mem_rdata(mem_rdata),
     .mem_byte_enable(mem_byte_enable),
     .mem_byte_enable256(mem_byte_enable256),
-    .address(mem_address),
-	.prev_address(prev_address)
+    .address(addrmux_out),
+	.prev_address(addrmux_out_prev)
 );
 
 endmodule : pipelined_cache

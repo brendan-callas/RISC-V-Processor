@@ -1,6 +1,8 @@
 //import rv32i_types::*;
 
 module forward_hazard(
+
+	input clk,
 	
 	// inputs for forwarding
 	input logic [4:0] rs1_id_ex, // register inputs here are indexes of the register (not the data in the register)
@@ -45,6 +47,13 @@ module forward_hazard(
 
 );
 
+
+// since pipelined data cache is 2-cycle, we only want to delay if mem_resp=0 after 1 cycle
+logic data_mem_read_delayed;
+logic data_mem_write_delayed;
+logic data_mem_read_delayed_masked;
+logic data_mem_write_delayed_masked;
+
 function void set_defaults();
 	
 	rs1mux_sel = rs1mux::rs1_out;
@@ -62,6 +71,10 @@ endfunction
 always_comb begin
 
 	set_defaults(); 
+	
+	// want to mask the delayed mem read/write signals I think
+	data_mem_read_delayed_masked = data_mem_read_delayed & data_mem_read;
+	data_mem_write_delayed_masked = data_mem_write_delayed & data_mem_write;
 
 	/********* forwarding for rs1mux *********/
 
@@ -104,7 +117,7 @@ always_comb begin
 	// When we have a cache miss on either instruction or data, we want to stall the pipeline until memory responds
 	// If there is a data hazard involving a load, we also want to stall until the data is ready.
 	  
-	if ( ( (inst_mem_read==1'b1) && (inst_mem_resp==1'b0) ) || ( (data_mem_read==1'b1) && (data_mem_resp==1'b0) ) || ( (data_mem_write==1'b1) && (data_mem_resp==1'b0) ) ) begin
+	if ( ( (inst_mem_read==1'b1) && (inst_mem_resp==1'b0) ) || ( (data_mem_read_delayed_masked==1'b1) && (data_mem_resp==1'b0) ) || ( (data_mem_write_delayed_masked==1'b1) && (data_mem_resp==1'b0) ) ) begin
 		//stall_everything
 		stall_pc = 1'b1;
 		stall_if_id = 1'b1;
@@ -131,6 +144,12 @@ always_comb begin
 		bubble_control = 1'b1;
 	end
 
+end
+
+always_ff @(posedge clk)
+begin
+	data_mem_read_delayed <= data_mem_read;
+	data_mem_write_delayed <= data_mem_write;
 end
 
 

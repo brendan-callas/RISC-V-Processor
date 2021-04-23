@@ -258,6 +258,8 @@ alu alu(
 // Forwarding/Hazard Module
 forward_hazard forward_hazard_module(
 
+	.clk(clk),
+
 	// inputs for forwarding
 	.rs1_id_ex(instruction_decoded_id_ex.rs1),
 	.rs2_id_ex(instruction_decoded_id_ex.rs2),

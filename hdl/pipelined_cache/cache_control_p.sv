@@ -9,7 +9,7 @@ module cache_control_p (
 	// port to cpu
     input logic mem_read,
     input logic mem_write,
-	output logic mem_resp,
+	//output logic mem_resp, // this is output by datapath now
 
 	//signals between datapath and control
 	output logic source_sel,
@@ -22,10 +22,12 @@ module cache_control_p (
 	output logic load_dirty,
 	output logic dirty_sel,
 	output logic addrmux_sel,
+	output logic stall_regs,
 	input logic cache_hit,
 	input logic dirty_o,
 	input logic lru_out,
 	input logic hit1,
+	input logic stall, //if there is a pipeline stall due to instruction read
 	
 	//port to memory
 	input logic resp_from_mem,
@@ -41,6 +43,7 @@ enum int unsigned {
 	s_write_back,
 	s_load_data_from_mem,
 	s_load_data_into_cache,
+	s_load_data_into_cache2,
 	s_respond_to_cpu
 	
 } state, next_state;
@@ -56,10 +59,11 @@ function void set_defaults();
 	read_lru = 1'b1; // might need to make this default to 1
 	source_sel = 1'b0;
 	read_cache_data = 1'b1; // always want to read cache data
-	mem_resp = 1'b0;
+	//mem_resp = 1'b0;
 	load_dirty = 1'b0;
 	dirty_sel = lru_out; // dirty output is only important for checking if we need to write back when evicting.
 	addrmux_sel = 1'b0; // cpu (current) address
+	stall_regs = 1'b0;
 endfunction
 
 always_comb
@@ -72,10 +76,10 @@ begin : state_actions
 		
 		s_idle: begin
 			if( (mem_read | mem_write) & cache_hit) begin
-				way_sel = hit1; // redundant since this is default; keeping it here anyway for now
-				load_lru = 1'b1; // lru will load way_sel into the respective index
-				load_cache = mem_write; // want to load cache if we are writing;
-				if(mem_write) load_dirty = 1'b1;
+				//way_sel = hit1; // redundant since this is default; keeping it here anyway for now
+				//load_lru = 1'b1; // lru will load way_sel into the respective index
+				//load_cache = mem_write; // want to load cache if we are writing;
+				//if(mem_write) load_dirty = 1'b1;
 			end
 		end
 		
@@ -84,6 +88,7 @@ begin : state_actions
 			way_sel = lru_out; //should this be changed since data from cacheline is delayed a cycle? (set this in prev state)
 			tag_sel = 1'b1;
 			addrmux_sel = 1'b1; // previous address
+			stall_regs = 1'b1;
 		end
 		
 		
@@ -92,6 +97,7 @@ begin : state_actions
 			way_sel = lru_out; //should this be changed since data from cacheline is delayed a cycle? (set this in prev state)
 			tag_sel = 1'b0; //choose mem address from tag (concat with set)
 			addrmux_sel = 1'b1; // previous address
+			stall_regs = 1'b1;
 		end
 		
 		s_load_data_from_mem: begin
@@ -99,6 +105,7 @@ begin : state_actions
 			way_sel = lru_out;
 			tag_sel = 1'b1; //select mem addr tag
 			addrmux_sel = 1'b1; // previous address
+			stall_regs = 1'b1;
 		end
 		
 		s_load_data_into_cache: begin
@@ -107,15 +114,26 @@ begin : state_actions
 			way_sel = lru_out; //replace least recently used
 			load_dirty = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
 			addrmux_sel = 1'b1; // previous address
+			stall_regs = 1'b1;
+		end
+		
+		s_load_data_into_cache2: begin
+			load_cache = 1'b1;
+			source_sel = 1'b1; // memory
+			way_sel = lru_out; //replace least recently used
+			load_dirty = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
+			addrmux_sel = 1'b1; // previous address
+			stall_regs = 1'b1;
 		end
 		
 		s_respond_to_cpu: begin
-			mem_resp = 1'b1;
+			//mem_resp = 1'b1;
 			way_sel = hit1; // redundant since this is default; keeping it here anyway for now
 			load_lru = 1'b1; // lru will load way_sel into the respective index
 			load_cache = mem_write; // want to load cache if we are writing;
 			if(mem_write) load_dirty = 1'b1;
 			addrmux_sel = 1'b0; // cpu (current) address
+			stall_regs = 1'b0;
 		end
 	endcase
 	
@@ -141,11 +159,11 @@ begin : next_state_logic
 		
 			s_idle: begin
 				if( (mem_read | mem_write) & ~cache_hit & dirty_o) begin
-					next_state = s_miss;
+					next_state = s_write_back;
 				end
 				
 				else if( (mem_read | mem_write) & ~cache_hit & ~dirty_o) begin
-					next_state = s_miss;
+					next_state = s_load_data_from_mem;
 				end
 				
 				if( (mem_read | mem_write) & cache_hit) begin
@@ -177,17 +195,21 @@ begin : next_state_logic
 			end
 			
 			s_load_data_into_cache: begin
-				next_state = s_respond_to_cpu; //s_load_data_into_cache_2;
+				next_state = s_respond_to_cpu; 
+			end
+			
+			s_load_data_into_cache2: begin
+				next_state = s_respond_to_cpu;
 			end
 			
 			s_respond_to_cpu: begin
 			
 				if( (mem_read | mem_write) & ~cache_hit & dirty_o) begin
-					next_state = s_miss; //s_write_back;
+					next_state = s_write_back; //s_write_back;
 				end
 				
 				else if( (mem_read | mem_write) & ~cache_hit & ~dirty_o) begin
-					next_state = s_miss; //s_load_data_from_mem;
+					next_state = s_load_data_from_mem; //s_load_data_from_mem;
 				end
 				
 				if( (mem_read | mem_write) & cache_hit) begin
@@ -204,7 +226,8 @@ end
 always_ff @(posedge clk)
 begin: next_state_assignment
     /* Assignment of next state on clock edge */
-	state <= next_state;
+	if(~stall)
+		state <= next_state;
 end
 
 

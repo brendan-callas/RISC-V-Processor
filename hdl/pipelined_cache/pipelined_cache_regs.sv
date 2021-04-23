@@ -19,6 +19,7 @@ module pipelined_cache_regs
 	input logic [31:0] byte_enable_masked1_i,
 	input logic [2:0] set_i,
 	input logic stall_i,
+	input logic [31:0] addrmux_out_i,
 	
 	
 	output logic [255:0] mem_rdata_o, // to cpu
@@ -34,7 +35,8 @@ module pipelined_cache_regs
 	output logic [31:0] byte_enable_masked1_o,
 	output logic [2:0] set_o,
 	output logic stall_o,
-	output logic stall2_o
+	output logic stall2_o,
+	output logic [31:0] addrmux_out_o
 );
 
 // internal registers
@@ -52,6 +54,7 @@ logic [31:0] byte_enable_masked1;
 logic [2:0] set;
 logic stall;
 logic stall2;
+logic [31:0] addrmux_out;
 
 always_ff @(posedge clk)
 begin
@@ -70,12 +73,12 @@ begin
 		byte_enable_masked1 <= '0;
 		set <= '0;
 		stall <= '0;
+		addrmux_out <= '0;
     end
     else if (load)
     begin
+		
 		mem_rdata <= mem_rdata_i;
-		mem_wdata <= mem_wdata_i;
-		address <= address_i;
 		hit <= hit_i;
 		dirty <= dirty_i;
 		hit1 <= hit1_i;
@@ -87,12 +90,13 @@ begin
 		set <= set_i;
 		stall <= stall_i;
 		stall2 <= stall;
+		
     end
     else
     begin
         mem_rdata <= mem_rdata;
 		mem_wdata <= mem_wdata;
-		hit <= hit_i;
+		hit <= hit;
 		dirty <= dirty;
 		address <= address;
 		hit1 <= hit1;
@@ -104,14 +108,22 @@ begin
 		set <= set;
 		stall <= stall_i; //dont want to stall the stall signal
 		stall2 <= stall;
+		addrmux_out <= addrmux_out;
     end
+	
+	if(~stall) begin
+		mem_wdata <= mem_wdata_i;
+		address <= address_i;
+		if(load) addrmux_out <= addrmux_out_i;
+	end
 end
 
 always_comb
 begin
-	if(~stall)
-		mem_rdata_o = mem_rdata_i;
-	else mem_rdata_o = mem_rdata;
+	//if(~stall)
+		//mem_rdata_o = mem_rdata_i;
+	//else mem_rdata_o = mem_rdata;
+	mem_rdata_o = mem_rdata;
 	mem_wdata_o = mem_wdata;
 	hit_o = hit;
 	dirty_o = dirty;
@@ -125,6 +137,7 @@ begin
 	set_o = set;
 	stall_o = stall;
 	stall2_o = stall2;
+	addrmux_out_o = addrmux_out;
 end
 
 endmodule : pipelined_cache_regs

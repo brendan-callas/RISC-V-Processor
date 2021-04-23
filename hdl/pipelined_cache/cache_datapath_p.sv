@@ -43,13 +43,17 @@ module cache_datapath_p #(
 	input logic load_dirty,
 	input logic dirty_sel,
 	input logic addrmux_sel,
+	input logic stall_regs,
 	output logic cache_hit,
 	output logic dirty_o,
 	output logic lru_out,
 	output logic hit1,
+	output logic mem_resp,
 	
 	// to busline adaptor
-	output logic [31:0] prev_address
+	//output logic [31:0] prev_address,
+	output logic [31:0] addrmux_out,
+	output logic [31:0] addrmux_out_prev
 );
 
 // Internal Signals
@@ -84,14 +88,14 @@ logic comparator1_o;
 logic [255:0] cacheline_data_out_internal;
 logic cache_hit_prev;
 logic dirty_o_prev;
-logic lru_out_internal;
+logic lru_out_prev;
 logic hit1_prev;
  // from cpu, feeds back into cache
-logic [255:0] mem_wdata256_internal;
+logic [255:0] mem_wdata256_prev;
 logic [31:0] mem_address_internal;
 
 
-logic [31:0] addrmux_out;
+
 logic mem_write_prev;
 logic load_cache_prev;
 
@@ -108,6 +112,8 @@ logic stall_prev;
 logic stall2;
 logic [31:0] stall32;
 
+logic [31:0] prev_address;
+
 
 
 
@@ -122,13 +128,13 @@ pipelined_cache_regs cache_regs
 (
     .clk(clk),
     .rst(rst),
-    .load(~stall | ~cache_hit),
+    .load(~stall),
     
 	.mem_rdata_i(cacheline_data_out_internal),
 	.mem_wdata_i(mem_wdata256),
 	.hit_i(cache_hit),
 	.dirty_i(dirty_o),
-	.lru_i(lru_out_internal),
+	.lru_i(lru_out),
 	.hit1_i(hit1),
 	.address_i(mem_address),
 	.mem_write_i(mem_write),
@@ -136,14 +142,15 @@ pipelined_cache_regs cache_regs
 	.byte_enable_masked0_i(byte_enable_masked0),
 	.byte_enable_masked1_i(byte_enable_masked1),
 	.set_i(set),
-	.stall_i(stall),
+	.stall_i(stall_regs),
+	.addrmux_out_i(addrmux_out),
 	
 	
 	.mem_rdata_o(cacheline_data_out),
-	.mem_wdata_o(mem_wdata256_internal),
+	.mem_wdata_o(mem_wdata256_prev),
 	.hit_o(cache_hit_prev),
 	.dirty_o(dirty_o_prev),
-	.lru_o(lru_out),
+	.lru_o(lru_out_prev),
 	.hit1_o(hit1_prev),
 	.address_o(prev_address),
 	.mem_write_o(mem_write_prev),
@@ -152,8 +159,13 @@ pipelined_cache_regs cache_regs
 	.byte_enable_masked1_o(byte_enable_masked1_prev),
 	.set_o(set_prev),
 	.stall_o(stall_prev),
-	.stall2_o(stall2)
+	.stall2_o(stall2),
+	.addrmux_out_o(addrmux_out_prev)
 );
+
+always_comb begin
+	mem_resp = cache_hit_prev;
+end
 
 
 
@@ -203,7 +215,7 @@ always_comb begin : MUXES
 	endcase
 	
 	// dirty bit out mux
-	unique case (lru_out_internal) // dirty_sel = lru_out, don't want to use delayed version
+	unique case (lru_out) // dirty_sel = lru_out, don't want to use delayed version
 		1'b0: dirty_o = dirty0;
 		1'b1: dirty_o = dirty1;
 		default: dirty_o = dirty0;
@@ -328,7 +340,7 @@ reg_array lru_array(
     //.windex(set),
 	.index(set),
     .datain(~way_sel), // want to load the way which is NOT being used
-    .dataout(lru_out_internal)
+    .dataout(lru_out)
 );
 
 comparator comparator0(
