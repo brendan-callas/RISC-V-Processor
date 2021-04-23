@@ -77,6 +77,7 @@ logic hit1;
 logic dirty_sel;
 logic addrmux_sel;
 logic stall_regs;
+logic force_load;
 
 
 // bus adaptor signals

@@ -23,6 +23,7 @@ module cache_control_p (
 	output logic dirty_sel,
 	output logic addrmux_sel,
 	output logic stall_regs,
+	output logic force_load,
 	input logic cache_hit,
 	input logic dirty_o,
 	input logic lru_out,
@@ -64,6 +65,7 @@ function void set_defaults();
 	dirty_sel = lru_out; // dirty output is only important for checking if we need to write back when evicting.
 	addrmux_sel = 1'b0; // cpu (current) address
 	stall_regs = 1'b0;
+	force_load = 1'b0;
 endfunction
 
 always_comb
@@ -81,6 +83,8 @@ begin : state_actions
 				//load_cache = mem_write; // want to load cache if we are writing;
 				//if(mem_write) load_dirty = 1'b1;
 			end
+			
+			force_load = 1'b1;
 			
 			//if(~cache_hit) stall_regs = 1'b1;
 		end
@@ -108,6 +112,7 @@ begin : state_actions
 			tag_sel = 1'b1; //select mem addr tag
 			addrmux_sel = 1'b1; // previous address
 			stall_regs = 1'b1;
+			
 		end
 		
 		s_load_data_into_cache: begin
@@ -192,7 +197,7 @@ begin : next_state_logic
 			
 			s_load_data_from_mem: begin
 				if(resp_from_mem == 1'b1) begin
-					next_state = s_load_data_into_cache;
+					next_state = s_load_data_into_cache; //s_load_data_into_cache
 				end
 			end
 			

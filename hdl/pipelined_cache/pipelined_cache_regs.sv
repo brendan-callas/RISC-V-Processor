@@ -20,6 +20,7 @@ module pipelined_cache_regs
 	input logic [2:0] set_i,
 	input logic stall_i,
 	input logic [31:0] addrmux_out_i,
+	input logic force_load,
 	
 	
 	output logic [255:0] mem_rdata_o, // to cpu
@@ -77,9 +78,7 @@ begin
     end
     else if (load)
     begin
-		
-		mem_rdata <= mem_rdata_i;
-		hit <= hit_i;
+	
 		dirty <= dirty_i;
 		hit1 <= hit1_i;
 		lru <= lru_i;
@@ -91,12 +90,24 @@ begin
 		stall <= stall_i;
 		stall2 <= stall;
 		
-		if(~stall_i) begin
+		hit <= hit_i;
+		
+		
+		
+		
+		if(~stall_i & (hit_i | force_load)) begin
+
 			mem_wdata <= mem_wdata_i;
+			mem_rdata <= mem_rdata_i;
+			
 			address <= address_i;
-		end
-		if(~stall_o) begin
 			addrmux_out <= addrmux_out_i;
+			
+
+		end
+
+		if(~stall_i) begin
+			
 		end
 		
     end
@@ -124,10 +135,10 @@ end
 
 always_comb
 begin
-	//if(~stall)
-		//mem_rdata_o = mem_rdata_i;
-	//else mem_rdata_o = mem_rdata;
-	mem_rdata_o = mem_rdata;
+	if(hit_i & load)
+		mem_rdata_o = mem_rdata_i;
+	else mem_rdata_o = mem_rdata;
+	//mem_rdata_o = mem_rdata_i;
 	mem_wdata_o = mem_wdata;
 	hit_o = hit;
 	dirty_o = dirty;

@@ -44,6 +44,7 @@ module cache_datapath_p #(
 	input logic dirty_sel,
 	input logic addrmux_sel,
 	input logic stall_regs,
+	input logic force_load,
 	output logic cache_hit,
 	output logic dirty_o,
 	output logic lru_out,
@@ -144,6 +145,7 @@ pipelined_cache_regs cache_regs
 	.set_i(set),
 	.stall_i(stall_regs),
 	.addrmux_out_i(addrmux_out),
+	.force_load(force_load),
 	
 	
 	.mem_rdata_o(cacheline_data_out),
