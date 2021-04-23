@@ -91,6 +91,16 @@ begin
 		stall <= stall_i;
 		stall2 <= stall;
 		
+		if(~stall) begin
+			mem_wdata <= mem_wdata_i;
+			address <= address_i;
+			addrmux_out <= addrmux_out_i;
+		end
+		
+		if(hit_o) begin
+			
+		end
+		
     end
     else
     begin
@@ -111,11 +121,7 @@ begin
 		addrmux_out <= addrmux_out;
     end
 	
-	if(~stall) begin
-		mem_wdata <= mem_wdata_i;
-		address <= address_i;
-		if(load) addrmux_out <= addrmux_out_i;
-	end
+	
 end
 
 always_comb

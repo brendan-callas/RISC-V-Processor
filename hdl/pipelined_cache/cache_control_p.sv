@@ -81,6 +81,8 @@ begin : state_actions
 				//load_cache = mem_write; // want to load cache if we are writing;
 				//if(mem_write) load_dirty = 1'b1;
 			end
+			
+			//if(~cache_hit) stall_regs = 1'b1;
 		end
 		
 		// have a state for checking dirty bit
@@ -212,7 +214,7 @@ begin : next_state_logic
 					next_state = s_load_data_from_mem; //s_load_data_from_mem;
 				end
 				
-				if( (mem_read | mem_write) & cache_hit) begin
+				else if( (mem_read | mem_write) & cache_hit) begin
 					next_state = s_respond_to_cpu;
 				end
 				else next_state = s_idle; //NOT SURE ABOUT THIS
