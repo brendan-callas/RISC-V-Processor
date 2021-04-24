@@ -3,6 +3,7 @@ module way_p
     input clk,
     input rst,
 	
+	input logic [2:0] data_index,
 	input logic [2:0] rindex_i,
 	input logic [2:0] windex_i,
 	input logic [255:0] data_i,
@@ -59,8 +60,8 @@ data_array_p data_array(
 	.rst(rst),
 	.read(read_cache_data_i),
 	.write_en(byte_enable_i),
-	.rindex(rindex_i),
-	.windex(windex_i),
+	.rindex(data_index),
+	.windex(data_index),
 	.datain(data_i),
 	.dataout(data_o)
 );

@@ -120,12 +120,8 @@ begin : state_actions
 		end
 		
 		s_load_data_into_cache2: begin
-			load_cache = 1'b1;
-			source_sel = 1'b1; // memory
-			way_sel = lru_out; //replace least recently used
-			load_dirty = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
-			addrmux_sel = 1'b1; // previous address
-			stall_regs = 1'b1;
+			addrmux_sel = 1'b1; //prev
+			way_sel = lru_out;
 		end
 		
 		s_respond_to_cpu: begin
@@ -197,7 +193,7 @@ begin : next_state_logic
 			end
 			
 			s_load_data_into_cache: begin
-				next_state = s_respond_to_cpu; 
+				next_state = s_respond_to_cpu; //s_respond_to_cpu
 			end
 			
 			s_load_data_into_cache2: begin
