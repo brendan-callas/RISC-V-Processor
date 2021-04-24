@@ -19,7 +19,10 @@ module ex_mem_regs
 	output rv32i_control_word control_word_o,
 	output rv32i_word rs2_out_o,
 	output logic [31:0] alu_out_o,
-	output logic br_en_o
+	output logic br_en_o,
+	
+	input logic halt_i,
+	output logic halt_o
 );
 
 // internal registers
@@ -30,6 +33,8 @@ rv32i_control_word control_word;
 rv32i_word rs2_out;
 logic [31:0] alu_out;
 logic br_en;
+
+logic halt;
 
 always_ff @(posedge clk)
 begin
@@ -43,6 +48,7 @@ begin
 		rs2_out <= '0;
 		alu_out <= '0;
 		br_en <= '0;
+		halt <= halt_i; //dont squah halt
     end
     else if (load)
     begin
@@ -53,6 +59,7 @@ begin
 		rs2_out <= rs2_out_i;
 		alu_out <= alu_out_i;
 		br_en <= br_en_i;
+		halt <= halt_i;
     end
     else
     begin
@@ -63,6 +70,7 @@ begin
 		rs2_out <= rs2_out;
 		alu_out <= alu_out;
 		br_en <= br_en;
+		halt <= halt;
     end
 end
 
@@ -75,6 +83,7 @@ begin
 	rs2_out_o = rs2_out;
 	alu_out_o = alu_out;
 	br_en_o = br_en;
+	halt_o = halt;
 end
 
 endmodule : ex_mem_regs

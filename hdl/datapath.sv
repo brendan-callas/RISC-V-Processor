@@ -131,6 +131,13 @@ logic bubble_control;
 // reset some pipeline regs when mispredict br_en
 logic squash;
 
+//halt signals
+logic halt_i;
+logic halt_if_id;
+logic halt_id_ex;
+logic halt_ex_mem;
+logic halt_mem_wb;
+
 // Instantiate pipeline stage registers
 
 if_id_regs if_id_regs(
@@ -140,7 +147,10 @@ if_id_regs if_id_regs(
     .pc_i(pc_out),
 	.instruction_i(inst_mem_rdata),
     .pc_o(pc_if_id),
-	.instruction_o(instruction_if_id)
+	.instruction_o(instruction_if_id),
+	
+	.halt_i(halt_i),
+	.halt_o(halt_if_id)
 );
 
 id_ex_regs id_ex_regs(
@@ -159,7 +169,10 @@ id_ex_regs id_ex_regs(
 	.instruction_decoded_o(instruction_decoded_id_ex),
 	.control_word_o(control_word_id_ex),
 	.rs1_out_o(rs1_out_id_ex),
-	.rs2_out_o(rs2_out_id_ex)
+	.rs2_out_o(rs2_out_id_ex),
+	
+	.halt_i(halt_if_id),
+	.halt_o(halt_id_ex)
 );
 
 ex_mem_regs ex_mem_regs(
@@ -180,7 +193,10 @@ ex_mem_regs ex_mem_regs(
 	.control_word_o(control_word_ex_mem),
 	.rs2_out_o(rs2_out_ex_mem),
 	.alu_out_o(alu_out_ex_mem),
-	.br_en_o(br_en_ex_mem)
+	.br_en_o(br_en_ex_mem),
+	
+	.halt_i(halt_id_ex),
+	.halt_o(halt_ex_mem)
 );
 
 mem_wb_regs mem_wb_regs(
@@ -200,7 +216,10 @@ mem_wb_regs mem_wb_regs(
 	.control_word_o(control_word_mem_wb),
 	.alu_out_o(alu_out_mem_wb),
 	.br_en_o(br_en_mem_wb),
-	.mem_data_out_o(mem_data_out_mem_wb)
+	.mem_data_out_o(mem_data_out_mem_wb),
+	
+	.halt_i(halt_ex_mem),
+	.halt_o(halt_mem_wb)
 );
 
 
@@ -383,6 +402,7 @@ always_comb begin : MUXES
 	endcase
 	
 	// Mux for setting data out (to memory) and mem_byte_enable masks, for storing/loading bytes or halves
+	
 	case ( alu_out_ex_mem[1:0]) // alu_out will hold memory address
 	
 		2'b00: begin
@@ -418,6 +438,12 @@ always_comb begin : MUXES
 		end
 	endcase
 	
+	data_out_b = 32'b0;
+	data_out_h = 32'b0;
+	
+	data_out_mask_b = 4'b1111;
+	data_out_mask_h = 4'b1111;
+	
 	
     unique case (pcmux_sel)
         pcmux::pc_plus4: pcmux_out = pc_out + 4;
@@ -442,6 +468,7 @@ always_comb begin : MUXES
 	
 	// logic for regfilemux (ex/mem) inputs
 	// TODO Not entirely sure that data_mem_rdata is the correct value to use
+	
 	case ( alu_out_ex_mem[1:0] )
 	
 		2'b00: begin
@@ -478,6 +505,9 @@ always_comb begin : MUXES
 			lhu_ex_mem = { 16'b0, data_mem_rdata[31:16] };
 		end
 	endcase
+	
+
+	
 	
 	// regfilemux on output of EX/MEM Stage
 	unique case (control_word_ex_mem.regfilemux_sel)
@@ -568,15 +598,12 @@ always_comb begin : MUXES
 	endcase
 	
 	
+	// halt signal for RVFI
+	if(pcmux_out == pc_ex_mem)
+		halt_i = 1'b1;
+	else halt_i = 1'b0;
 	
-	
-	
-	
-	
-	
-	
-	
-	
+
 	
 end
 

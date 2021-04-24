@@ -25,7 +25,7 @@ bit f;
 // This section not required until CP2
 
 // assign rvfi.commit = 0; // Set high when a valid instruction is modifying regfile or PC
-assign rvfi.halt = (rvfi.pc_wdata == rvfi.pc_rdata) && rvfi.commit;   // Set high when you detect an infinite loop
+assign rvfi.halt = dut.datapath.halt_mem_wb;   // Set high when you detect an infinite loop
 initial rvfi.order = 0;
 always @(posedge itf.clk iff rvfi.commit) rvfi.order <= rvfi.order + 1; // Modify for OoO
 
@@ -70,6 +70,7 @@ logic [31:0] mem_wb_mem_wdata;
 logic [31:0] mem_wb_mem_rdata;
 
 logic stall_pc;
+logic br_en_prev;
 
 assign stall_pc = dut.datapath.stall_pc;
 always_ff @(posedge itf.clk) begin
@@ -80,6 +81,7 @@ always_ff @(posedge itf.clk) begin
             mem_wb_mem_addr <= dut.data_addr;
             mem_wb_mem_wdata <= dut.data_wdata;
             mem_wb_mem_rdata <= dut.data_rdata;
+			
 			if (dut.datapath.control_word_ex_mem.data_mem_read) begin
 				mem_wb_mem_rmask <= dut.data_mbe;
 			end
@@ -91,26 +93,34 @@ always_ff @(posedge itf.clk) begin
 			else mem_wb_mem_wmask <= '0;
 			
       end
+	  
+	  if(~dut.datapath.stall_ex_mem) begin
+	  
+			br_en_prev <= dut.datapath.br_en;
+			if(br_en_prev)
+				mem_wb_pc_wdata <= dut.datapath.pc_out;
+			else mem_wb_pc_wdata <= dut.datapath.pc_id_ex;
+	  end
 end
 
 always_comb begin // rvfi signals
       
-      rvfi.inst = dut.datapath.instruction_mem_wb;
-      rvfi.trap = 1'b0;
-      rvfi.rs1_addr = dut.datapath.instruction_decoded_mem_wb.rs1;
-      rvfi.rs2_addr = dut.datapath.instruction_decoded_mem_wb.rs2;
-      rvfi.rs1_rdata = mem_wb_rs1_rdata;
-      rvfi.rs2_rdata = mem_wb_rs2_rdata;
-      rvfi.load_regfile = dut.datapath.control_word_mem_wb.load_regfile;
-      rvfi.rd_addr = dut.datapath.instruction_decoded_mem_wb.rd;
-      rvfi.rd_wdata = dut.datapath.regfile.in;
+      //rvfi.inst = dut.datapath.instruction_mem_wb;
+      //rvfi.trap = 1'b0;
+      //rvfi.rs1_addr = dut.datapath.instruction_decoded_mem_wb.rs1;
+      //rvfi.rs2_addr = dut.datapath.instruction_decoded_mem_wb.rs2;
+      //rvfi.rs1_rdata = mem_wb_rs1_rdata;
+      //rvfi.rs2_rdata = mem_wb_rs2_rdata;
+      //rvfi.load_regfile = dut.datapath.control_word_mem_wb.load_regfile;
+      //rvfi.rd_addr = dut.datapath.instruction_decoded_mem_wb.rd;
+      //rvfi.rd_wdata = dut.datapath.regfile.in;
       rvfi.pc_rdata = dut.datapath.pc_mem_wb;
-      rvfi.pc_wdata = 32'hxxxx;
-      rvfi.mem_addr = mem_wb_mem_addr;
-      rvfi.mem_rmask = mem_wb_mem_rmask;
-      rvfi.mem_wmask = mem_wb_mem_wmask;
-      rvfi.mem_rdata = mem_wb_mem_rdata;
-      rvfi.mem_wdata = mem_wb_mem_wdata;
+      rvfi.pc_wdata = mem_wb_pc_wdata;
+      //rvfi.mem_addr = mem_wb_mem_addr;
+      //rvfi.mem_rmask = mem_wb_mem_rmask;
+      //rvfi.mem_wmask = mem_wb_mem_wmask;
+      //rvfi.mem_rdata = mem_wb_mem_rdata;
+      //rvfi.mem_wdata = mem_wb_mem_wdata;
 	  if (dut.datapath.instruction_decoded_mem_wb.opcode) begin
             rvfi.commit = (~(dut.datapath.stall_mem_wb));
       end else rvfi.commit = 1'b0;
