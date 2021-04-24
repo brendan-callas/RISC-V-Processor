@@ -115,11 +115,14 @@ logic [31:0] stall32;
 
 logic [31:0] prev_address;
 
+logic way_sel_prev;
+
 
 
 
 assign mem_addr_tag = addrmux_out[31:8];
 assign set = addrmux_out[7:5];
+assign set_prev = addrmux_out_prev[7:5];
 assign address_to_mem = {tag_mux_out, addrmux_out[7:5], 5'b0}; //Still need to get specific 32-byte block, so use mem_addr[7:5]; align to 32-byte blocks
 
 assign stall32 = {32{stall}};
@@ -142,7 +145,7 @@ pipelined_cache_regs cache_regs
 	.load_cache_i(load_cache),
 	.byte_enable_masked0_i(byte_enable_masked0),
 	.byte_enable_masked1_i(byte_enable_masked1),
-	.set_i(set),
+	.way_sel_i(way_sel),
 	.stall_i(stall_regs),
 	.addrmux_out_i(addrmux_out),
 	.force_load(force_load),
@@ -159,7 +162,7 @@ pipelined_cache_regs cache_regs
 	.load_cache_o(load_cache_prev),
 	.byte_enable_masked0_o(byte_enable_masked0_prev),
 	.byte_enable_masked1_o(byte_enable_masked1_prev),
-	.set_o(set_prev),
+	.way_sel_o(way_sel_prev),
 	.stall_o(stall_prev),
 	.stall2_o(stall2),
 	.addrmux_out_o(addrmux_out_prev)
@@ -196,7 +199,7 @@ always_comb begin : MUXES
 	endcase
 	
 	// cacheline data mux (selects between the data output of way0 and way1)
-	unique case (way_sel)
+	unique case (way_sel_prev)
 		1'b0: cacheline_data_out_internal = cacheline_data0;
 		1'b1: cacheline_data_out_internal = cacheline_data1;
 		default: cacheline_data_out_internal = cacheline_data0;
@@ -225,7 +228,7 @@ always_comb begin : MUXES
 
 	
 	// load cache demux
-	unique case (way_sel)
+	unique case (way_sel_prev)
 		1'b0: begin
 			load_way0 = load_cache;
 			load_way1 = 1'b0;
@@ -297,6 +300,7 @@ way_p way0(
 	.clk(clk),
     .rst(rst),
 	
+	.data_index(set_prev),
 	.rindex_i(set),
 	.windex_i(set_w),
 	.data_i(data_source_mux_out),
@@ -304,7 +308,7 @@ way_p way0(
 	.load_i(load_way0),
 	.mem_write_i(mem_write_prev),
 	.tag_i(mem_addr_tag),
-	.read_cache_data_i(1'b1),
+	.read_cache_data_i(cache_hit),
 	.load_dirty(load_dirty0),
 	
 	.tag_o(tag0),
@@ -317,6 +321,7 @@ way_p way1(
 	.clk(clk),
     .rst(rst),
 	
+	.data_index(set_prev),
 	.rindex_i(set),
 	.windex_i(set_w),
 	.data_i(data_source_mux_out),
@@ -324,7 +329,7 @@ way_p way1(
 	.load_i(load_way1),
 	.mem_write_i(mem_write_prev),
 	.tag_i(mem_addr_tag),
-	.read_cache_data_i(1'b1),
+	.read_cache_data_i(cache_hit),
 	.load_dirty(load_dirty1),
 	
 	.tag_o(tag1),
@@ -337,11 +342,11 @@ reg_array lru_array(
 	.clk(clk),
     .rst(rst),
     //.read(read_lru),
-    .load(load_lru),
+    .load(load_lru_prev),
     //.rindex(set),
     //.windex(set),
-	.index(set),
-    .datain(~way_sel), // want to load the way which is NOT being used
+	.index(set_prev),
+    .datain(~way_sel_prev), // want to load the way which is NOT being used
     .dataout(lru_out)
 );
 

@@ -17,7 +17,7 @@ module pipelined_cache_regs
 	input logic load_cache_i,
 	input logic [31:0] byte_enable_masked0_i,
 	input logic [31:0] byte_enable_masked1_i,
-	input logic [2:0] set_i,
+	input logic way_sel_i,
 	input logic stall_i,
 	input logic [31:0] addrmux_out_i,
 	input logic force_load,
@@ -34,7 +34,7 @@ module pipelined_cache_regs
 	output logic load_cache_o,
 	output logic [31:0] byte_enable_masked0_o,
 	output logic [31:0] byte_enable_masked1_o,
-	output logic [2:0] set_o,
+	output logic way_sel_o,
 	output logic stall_o,
 	output logic stall2_o,
 	output logic [31:0] addrmux_out_o
@@ -52,7 +52,7 @@ logic mem_write;
 logic load_cache;
 logic [31:0] byte_enable_masked0;
 logic [31:0] byte_enable_masked1;
-logic [2:0] set;
+logic way_sel;
 logic stall;
 logic stall2;
 logic [31:0] addrmux_out;
@@ -72,7 +72,7 @@ begin
 		load_cache <= '0;
 		byte_enable_masked0 <= '0;
 		byte_enable_masked1 <= '0;
-		set <= '0;
+		way_sel <= '0;
 		stall <= '0;
 		addrmux_out <= '0;
     end
@@ -86,7 +86,7 @@ begin
 		load_cache <= load_cache_i;
 		byte_enable_masked0 <= byte_enable_masked0_i;
 		byte_enable_masked1 <= byte_enable_masked1_i;
-		set <= set_i;
+		way_sel <= way_sel_i;
 		stall <= stall_i;
 		stall2 <= stall;
 		
@@ -124,7 +124,7 @@ begin
 		load_cache <= load_cache;
 		byte_enable_masked0 <= byte_enable_masked0;
 		byte_enable_masked1 <= byte_enable_masked1;
-		set <= set;
+		way_sel <= way_sel;
 		stall <= stall;
 		stall2 <= stall;
 		addrmux_out <= addrmux_out;
@@ -135,10 +135,17 @@ end
 
 always_comb
 begin
+<<<<<<< HEAD
 	if(hit_i & load)
 		mem_rdata_o = mem_rdata_i;
 	else mem_rdata_o = mem_rdata;
 	//mem_rdata_o = mem_rdata_i;
+=======
+	//if(~stall)
+		//mem_rdata_o = mem_rdata_i;
+	//else mem_rdata_o = mem_rdata;
+	mem_rdata_o = mem_rdata_i;
+>>>>>>> temp
 	mem_wdata_o = mem_wdata;
 	hit_o = hit;
 	dirty_o = dirty;
@@ -149,7 +156,7 @@ begin
 	load_cache_o = load_cache;
 	byte_enable_masked0_o = byte_enable_masked0;
 	byte_enable_masked1_o = byte_enable_masked1;
-	set_o = set;
+	way_sel_o = way_sel;
 	stall_o = stall;
 	stall2_o = stall2;
 	addrmux_out_o = addrmux_out;
