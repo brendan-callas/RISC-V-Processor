@@ -468,7 +468,7 @@ always_comb begin : MUXES
 	
 	// logic for regfilemux (ex/mem) inputs
 	// TODO Not entirely sure that data_mem_rdata is the correct value to use
-	
+	/*
 	case ( alu_out_ex_mem[1:0] )
 	
 		2'b00: begin
@@ -505,8 +505,11 @@ always_comb begin : MUXES
 			lhu_ex_mem = { 16'b0, data_mem_rdata[31:16] };
 		end
 	endcase
-	
-
+	*/
+	lb_ex_mem = 32'b0;
+	lbu_ex_mem = 32'b0;
+	lh_ex_mem = 32'b0;
+	lhu_ex_mem = 32'b0;
 	
 	
 	// regfilemux on output of EX/MEM Stage
