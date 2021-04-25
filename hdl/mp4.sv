@@ -45,7 +45,15 @@ logic [255:0] data_wdata_p;
 logic data_resp_p;
 logic [255:0] data_rdata_p;
 
-// signals between cache and cacheline adaptor
+//signals between Arbiter and L2
+logic [255:0] data_from_l2;
+logic resp_from_l2;
+logic read_from_l2;
+logic write_to_l2;
+logic [255:0] wdata_to_l2;
+logic [31:0] address_to_l2;
+
+// signals between L2 and cacheline adaptor
 logic [255:0] cacheline_data_out;
 logic [255:0] data_from_mem;
 logic [31:0] address_to_mem;
@@ -96,15 +104,42 @@ cache_arbiter cache_arbiter
 	.data_mem_resp(data_resp_p),
 	.inst_mem_resp(inst_resp_p),
 	
-	//inputs from adaptor
-	.mem_rdata(data_from_mem),
-	.mem_resp(resp_from_mem),
+	//inputs from L2
+	.mem_rdata(data_from_l2),
+	.mem_resp(resp_from_l2),
 	
-	//outputs to adaptor
-	.mem_read(read_from_mem),
-	.mem_write(write_to_mem),
-	.mem_wdata(cacheline_data_out),
-	.mem_address(address_to_mem)
+	//outputs to L2
+	.mem_read(read_from_l2),
+	.mem_write(write_to_l2),
+	.mem_wdata(wdata_to_l2),
+	.mem_address(address_to_l2)
+);
+
+
+
+
+// L2 between arbiter and adaptor
+l2_cache l2_cache
+(
+	.clk(clk),
+	.rst(rst),
+	
+	// port to L1 (Arbiter)
+	.mem_resp(resp_from_l2),
+    .mem_rdata(data_from_l2),
+    .mem_read(read_from_l2),
+    .mem_write(write_to_l2),
+    .mem_address(address_to_l2),
+    .mem_wdata256(wdata_to_l2),
+	
+	// port to cacheline adaptor (to memory)
+	.pmem_wdata(cacheline_data_out),
+    .pmem_rdata(data_from_mem),
+    .pmem_address(address_to_mem),
+    .pmem_read(read_from_mem),
+    .pmem_write(write_to_mem),
+    .pmem_resp(resp_from_mem)
+	
 );
 
 cacheline_adaptor cacheline_adaptor
@@ -112,7 +147,7 @@ cacheline_adaptor cacheline_adaptor
 	.clk(clk),
     .reset_n(~rst),
 
-    // Port to LLC (Arbiter)
+    // Port to L2
     .line_i(cacheline_data_out),
     .line_o(data_from_mem),
     .address_i(address_to_mem),
