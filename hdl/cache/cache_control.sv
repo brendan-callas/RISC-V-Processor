@@ -93,6 +93,12 @@ begin : state_actions
 			read_from_mem = 1'b1;
 			way_sel = lru_out;
 			tag_sel = 1'b1; //select mem addr tag
+			
+			if(resp_from_mem == 1'b1) begin
+				load_cache = 1'b1;
+				source_sel = 1'b1; // memory
+				load_dirty = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
+			end
 		end
 		
 		s_load_data_into_cache: begin
@@ -158,7 +164,7 @@ begin : next_state_logic
 			
 			s_load_data_from_mem: begin
 				if(resp_from_mem == 1'b1) begin
-					next_state = s_load_data_into_cache;
+					next_state = s_respond_to_cpu; //s_load_data_into_cache
 				end
 			end
 			
