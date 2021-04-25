@@ -170,7 +170,7 @@ always_comb begin : MUXES
 	
 end
 
-way way0(
+l2_way way0(
 	.clk(clk),
     .rst(rst),
 	
@@ -189,7 +189,7 @@ way way0(
 	.dirty_o(dirty[0])
 );
 
-way way1(
+l2_way way1(
 	.clk(clk),
     .rst(rst),
 	
@@ -208,7 +208,7 @@ way way1(
 	.dirty_o(dirty[1])
 );
 
-way way2(
+l2_way way2(
 	.clk(clk),
     .rst(rst),
 	
@@ -227,7 +227,7 @@ way way2(
 	.dirty_o(dirty[2])
 );
 
-way way3(
+l2_way way3(
 	.clk(clk),
     .rst(rst),
 	
@@ -246,7 +246,7 @@ way way3(
 	.dirty_o(dirty[3])
 );
 
-way way4(
+l2_way way4(
 	.clk(clk),
     .rst(rst),
 	
@@ -265,7 +265,7 @@ way way4(
 	.dirty_o(dirty[4])
 );
 
-way way5(
+l2_way way5(
 	.clk(clk),
     .rst(rst),
 	
@@ -284,7 +284,7 @@ way way5(
 	.dirty_o(dirty[5])
 );
 
-way way6(
+l2_way way6(
 	.clk(clk),
     .rst(rst),
 	
@@ -303,7 +303,7 @@ way way6(
 	.dirty_o(dirty[6])
 );
 
-way way7(
+l2_way way7(
 	.clk(clk),
     .rst(rst),
 	
