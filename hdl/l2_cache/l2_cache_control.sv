@@ -25,6 +25,10 @@ module l2_cache_control (
 	input logic [2:0] hit_idx,
 	input logic [2:0] plru_idx,
 	
+	// signals for EWB
+	output logic load_ewb,
+	output logic evict_addr_sel,
+	
 	//port to memory
 	input logic resp_from_mem,
 	output logic read_from_mem,
@@ -35,10 +39,12 @@ module l2_cache_control (
 enum int unsigned {
     /* List of states */
 	s_idle,
-	s_write_back,
+	s_write_back_to_ewb,
 	s_load_data_from_mem,
-	s_load_data_into_cache,
-	s_respond_to_cpu
+	s_load_data_from_mem_ewb,
+	s_respond_to_cpu,
+	s_respond_to_cpu_ewb,
+	s_write_back_from_ewb
 	
 } state, next_state;
 
@@ -55,6 +61,8 @@ function void set_defaults();
 	mem_resp = 1'b0;
 	load_dirty_arr = 1'b0;
 	dirty_sel = plru_idx; // dirty output is only important for checking if we need to write back when evicting.
+	load_ewb = 1'b0;
+	evict_addr_sel = 1'b0; // default to address from cache
 endfunction
 
 always_comb
@@ -69,30 +77,55 @@ begin : state_actions
 			//all signals are default
 		end
 		
-		s_write_back: begin
+		s_write_back_to_ewb: begin
+			way_sel = plru_idx;
+			tag_sel = 1'b0; // tag related to cacheline data
+			load_ewb = 1'b1;
+		end
+		
+		s_write_back_from_ewb: begin
+			evict_addr_sel = 1'b1; //use address from EWB
 			write_to_mem = 1'b1;
-			way_sel = plru_idx; //should this be changed since data from cacheline is delayed a cycle? (set this in prev state)
-			tag_sel = 1'b0; //choose mem address from tag (concat with set)
 		end
 		
 		s_load_data_from_mem: begin
 			read_from_mem = 1'b1;
 			way_sel = plru_idx;
 			tag_sel = 1'b1; //select mem addr tag
+			
+			if(resp_from_mem == 1'b1) begin
+				load_cache = 1'b1;
+				source_sel = 1'b1; // memory
+				load_dirty_arr = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
+			end
 		end
 		
-		s_load_data_into_cache: begin
-			load_cache = 1'b1;
-			source_sel = 1'b1; // memory
-			way_sel = plru_idx; //replace least recently used
-			load_dirty_arr = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
+		// control signals same (but next state is different)
+		s_load_data_from_mem_ewb: begin
+			read_from_mem = 1'b1;
+			way_sel = plru_idx;
+			tag_sel = 1'b1; //select mem addr tag
+			
+			if(resp_from_mem == 1'b1) begin
+				load_cache = 1'b1;
+				source_sel = 1'b1; // memory
+				load_dirty_arr = 1'b1; // load a 0 if reading (and evicting), load 1 if writing. 
+			end
 		end
 		
 		s_respond_to_cpu: begin
 			mem_resp = 1'b1;
 			way_sel = hit_idx; // redundant since this is default; keeping it here anyway for now
 			load_lru = 1'b1; // lru will load way_sel into the respective index
-			// not sure if mem_write signal will persist here, so additional logic/signals may be needed
+			load_cache = mem_write; // want to load cache if we are writing;
+			if(mem_write) load_dirty_arr = 1'b1;
+		end
+		
+		// control signals same (but next state is different)
+		s_respond_to_cpu_ewb: begin
+			mem_resp = 1'b1;
+			way_sel = hit_idx; // redundant since this is default; keeping it here anyway for now
+			load_lru = 1'b1; // lru will load way_sel into the respective index
 			load_cache = mem_write; // want to load cache if we are writing;
 			if(mem_write) load_dirty_arr = 1'b1;
 		end
@@ -120,7 +153,7 @@ begin : next_state_logic
 		
 			s_idle: begin
 				if( (mem_read | mem_write) & ~cache_hit & dirty_o) begin
-					next_state = s_write_back;
+					next_state = s_write_back_to_ewb;
 				end
 				
 				else if( (mem_read | mem_write) & ~cache_hit & ~dirty_o) begin
@@ -132,25 +165,36 @@ begin : next_state_logic
 				end
 			end
 			
-			s_write_back: begin
+			s_write_back_to_ewb: begin
+				next_state = s_load_data_from_mem_ewb; //loading EWB should only take 1 cycle
+			end
+			
+			s_write_back_from_ewb: begin
 				if(resp_from_mem == 1'b1) begin
-					next_state = s_load_data_from_mem;
+					next_state = s_idle;
 				end
 			end
 			
 			s_load_data_from_mem: begin
 				if(resp_from_mem == 1'b1) begin
-					next_state = s_load_data_into_cache;
+					next_state = s_respond_to_cpu;
 				end
 			end
 			
-			s_load_data_into_cache: begin
-				next_state = s_respond_to_cpu;
+			s_load_data_from_mem_ewb: begin
+				if(resp_from_mem == 1'b1) begin
+					next_state = s_respond_to_cpu_ewb;
+				end
 			end
 			
 			s_respond_to_cpu: begin
 				next_state = s_idle;
 			end
+			
+			s_respond_to_cpu_ewb: begin
+				next_state = s_write_back_from_ewb;
+			end
+			
 		endcase
 	end
 end

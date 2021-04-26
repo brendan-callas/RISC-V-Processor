@@ -50,10 +50,10 @@ logic resp_from_mem;
 always_comb begin
 	resp_from_mem = pmem_resp;
 	data_from_mem = pmem_rdata;
-	pmem_wdata = cacheline_data_out;
+	// pmem_wdata = cacheline_data_out; this now comes from EWB
 	pmem_read = read_from_mem;
 	pmem_write = write_to_mem;
-	pmem_address = address_to_mem;
+	//pmem_address = address_to_mem; this now comes from a mux selecting between cache addr and EWB addr
 	
 	mem_rdata = cacheline_data_out;
 end
@@ -74,10 +74,38 @@ logic [2:0] hit_idx;
 logic [2:0] dirty_sel;
 logic [2:0] plru_idx;
 
+// signals for eviction write buffer
+logic load_ewb;
+logic evict_addr_sel;
+logic [31:0] evict_address_to_mem;
+
 
 l2_cache_control cache_control(.*);
 
 l2_cache_datapath cache_datapath(.*);
+
+eviction_write_buffer EWB(
+	.clk(clk),
+	.rst(rst),
+	
+	.load(load_ewb),
+	.wdata_i(cacheline_data_out),
+	.address_i(address_to_mem),
+	
+	.wdata_o(pmem_wdata),
+	.address_o(evict_address_to_mem)
+);
+
+
+// Mux to select between Cache Addr and EWB Addr
+always_comb begin
+	
+	unique case(evict_addr_sel)
+		1'b0: pmem_address = address_to_mem;
+		1'b1: pmem_address = evict_address_to_mem;
+		default: pmem_address = address_to_mem;
+	endcase
+end
  
 
 
