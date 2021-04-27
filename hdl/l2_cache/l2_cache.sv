@@ -15,7 +15,7 @@ module l2_cache #(
 	input clk,
 	input rst,
 	
-	// port to L2
+	// port to L1
 	output logic mem_resp,
     output logic [255:0] mem_rdata,
     input logic mem_read,
@@ -34,7 +34,9 @@ module l2_cache #(
 	
 );
 
+
 //******Internal Signals*****************//
+
 
 //needed for autograder
 
@@ -48,6 +50,7 @@ logic resp_from_mem;
 
 
 always_comb begin
+
 	resp_from_mem = pmem_resp;
 	data_from_mem = pmem_rdata;
 	// pmem_wdata = cacheline_data_out; this now comes from EWB
@@ -57,6 +60,8 @@ always_comb begin
 	
 	mem_rdata = cacheline_data_out;
 end
+
+
 
 
 
