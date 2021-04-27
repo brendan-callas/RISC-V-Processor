@@ -52,6 +52,8 @@ rv32i_word alumux1_out;
 rv32i_word alumux2_out;
 rv32i_word alu_out; // original output of ALU
 
+rv32i_word alu_fin_out; //takes into account m-extension
+
 // Outputs of EX/MEM Stage
 rv32i_control_word control_word_ex_mem;
 rv32i_word rs2_out_ex_mem;
@@ -95,6 +97,17 @@ rv32i_word data_out_h;
 
 logic [3:0] data_out_mask_b;
 logic [3:0] data_out_mask_h;
+
+//mult signals
+logic mult_go;
+logic mult_fin;
+logic [63:0] mult_out;
+
+//div signals
+logic div_go;
+logic div_fin;
+logic [31:0] quo_out;
+logic [31:0] rem_out;
 
 // Connect outputs
 assign inst_mem_read = 1'b1; //always read next instruction for CP1 (no hazards)
@@ -184,7 +197,7 @@ ex_mem_regs ex_mem_regs(
 	.instruction_decoded_i(instruction_decoded_id_ex),
 	.control_word_i(control_word_id_ex),
 	.rs2_out_i(rs2mux_out),
-	.alu_out_i(alu_out),
+	.alu_out_i(alu_fin_out),
 	.br_en_i(br_en),
 	.squash(squash),
     .pc_o(pc_ex_mem),
@@ -311,6 +324,47 @@ forward_hazard forward_hazard_module(
 	.stall_mem_wb(stall_mem_wb),
 	.bubble_control(bubble_control)
 );
+
+//multiplier TODO
+
+divider divider(
+
+	.clk,
+	.rst,
+	
+	.op(mex_funct3_t ' (instruction_decoded_id_ex.funct3)),
+	
+	.start(div_go),
+	.fin(div_fin),
+	.dividend(rs1mux_out),
+	.divisor(rs2mux_out),
+	.quotient(quo_out),
+	.remainder(rem_out)
+
+);
+
+//Decide whether to run mult or div
+always_comb begin
+
+	mult_go = 1'b0;
+	div_go = 1'b0;
+	
+	if(instruction_decoded_id_ex.opcode == op_reg) begin
+		if(instruction_decoded_id_ex.funct7 == 7'b0000001) begin
+			if((mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mul) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulh) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulhu) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulhsu)) begin
+				mult_go = 1'b1;
+			end
+		end
+	end
+	
+	if(instruction_decoded_id_ex.opcode == op_reg) begin
+		if(instruction_decoded_id_ex.funct7 == 7'b0000001) begin
+			if((mex_funct3_t ' (instruction_decoded_id_ex.funct3) == div) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == divu) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == rem) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == remu)) begin
+				div_go = 1'b1;
+			end
+		end
+	end
+end
 
 // Mux Selects
 always_comb begin
@@ -574,7 +628,25 @@ always_comb begin : MUXES
 		default: `BAD_MUX_SEL;
 	endcase
 	
+	//mul-div
+	alu_fin_out = alu_out;
 	
+	if(instruction_decoded_id_ex.opcode == op_reg) begin
+		if(instruction_decoded_id_ex.funct7 == 7'b0000001) begin
+			case(mex_funct3_t ' (instruction_decoded_id_ex.funct3))
+				mul: alu_fin_out = mult_out[31:0];
+				mulh: alu_fin_out = mult_out[63:32];
+				mulhu: alu_fin_out = mult_out[63:32];
+				mulhsu: alu_fin_out = mult_out[63:32];
+				div: alu_fin_out = quo_out;
+				divu: alu_fin_out = quo_out;
+				rem: alu_fin_out = rem_out;
+				remu: alu_fin_out = rem_out;
+				default: alu_fin_out = quo_out;
+			endcase
+		end
+	end
+
 	
 	// set data being sent to memory (data cache)
 	case (instruction_decoded_ex_mem.funct3)
