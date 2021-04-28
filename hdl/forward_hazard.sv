@@ -23,7 +23,10 @@ module forward_hazard(
 	input logic data_mem_read,
 	input logic data_mem_write,
 	input logic mem_write_if_id,
-	
+	input logic mult_go,
+	input logic div_go,
+	input logic mult_fin,
+	input logic div_fin,
 	
 	
 	// outputs for forwarding
@@ -103,7 +106,7 @@ always_comb begin
 	// When we have a cache miss on either instruction or data, we want to stall the pipeline until memory responds
 	// If there is a data hazard involving a load, we also want to stall until the data is ready.
 	  
-	if ( ( (inst_mem_read==1'b1) && (inst_mem_resp==1'b0) ) || ( (data_mem_read==1'b1) && (data_mem_resp==1'b0) ) || ( (data_mem_write==1'b1) && (data_mem_resp==1'b0) ) ) begin
+	if ( ( (inst_mem_read==1'b1) && (inst_mem_resp==1'b0) ) || ( (data_mem_read==1'b1) && (data_mem_resp==1'b0) ) || ( (data_mem_write==1'b1) && (data_mem_resp==1'b0) ) || ( (mult_go == 1'b1) && (mult_fin==1'b0) ) || ( (div_go==1'b1) && (div_fin==1'b0) ) ) begin
 		//stall_everything
 		stall_pc = 1'b1;
 		stall_if_id = 1'b1;

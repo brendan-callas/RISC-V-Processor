@@ -310,6 +310,10 @@ forward_hazard forward_hazard_module(
 	.data_mem_read(data_mem_read),
 	.data_mem_write(data_mem_write),
 	.mem_write_if_id(control_word.data_mem_write),
+	.mult_go(mult_go),
+	.div_go(div_go),
+	.mult_fin(mult_fin),
+	.div_fin(div_fin),
 	
 	// outputs for forwarding
 	.rs1mux_sel(rs1mux_sel),
@@ -325,7 +329,19 @@ forward_hazard forward_hazard_module(
 	.bubble_control(bubble_control)
 );
 
-//multiplier TODO
+multiplier multiplier(
+	.clk,
+	.rst,
+	
+	.op(mex_funct3_t ' (instruction_decoded_id_ex.funct3)),
+	
+	.start(mult_go),
+	.fin(mult_fin),
+	.multiplier(rs1mux_out),
+	.multiplicand(rs2mux_out),
+	.product(mult_out)
+	
+);
 
 divider divider(
 

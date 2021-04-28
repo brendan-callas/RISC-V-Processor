@@ -4,19 +4,20 @@ module us_divider(
 	input clk,
 	input rst,
 	
-	input start,
-	output fin,
-	input [31:0] dividend,
-	input [31:0] divisor,
-	output [31:0] quotient,
-	output [31:0] remainder
+	input logic start,
+	output logic fin,
+	input logic [31:0] dividend,
+	input logic [31:0] divisor,
+	output logic [31:0] quotient,
+	output logic [31:0] remainder
 	
 );
 
 logic [31:0] partial_q;
 logic [31:0] partial_r;
-logic [5:0] idx;
-logic [5:0] idx2;
+logic [31:0] idx;
+logic [31:0] idx2;
+logic [31:0] remdiv;
 
 enum int unsigned {
     /* List of states */
@@ -34,40 +35,43 @@ begin : state_actions
 		
 		idle: begin
 			fin = 1'b0;
-			idx2 = 6'b011111;
-			partial_q = 32'b0;
-			partial_r = 32'b0;
+			idx2 = 32'b011111;
+			partial_q = 32'd0;
+			partial_r = 32'd0;
+			remdiv = 32'd0;
 			
 		end
 		
 		div: begin
 		
 			fin = 1'b0;
+			remdiv = remainder - divisor;
 		
 			if(remainder < divisor) begin
 				partial_q = {quotient[30:0], 1'b0}; //shift
-				if(idx > 6'b011111) begin //if idx has hit 0 and overflowed
+				if(idx >= 32'b100000) begin 
 					partial_r = remainder;
 				end else begin
 					partial_r = {remainder[30:0], dividend[idx]};
 				end
 			end else begin
-				partial_q = {quotient[30:0], 1'b1}; //shift
-				if(idx > 6'b011111) begin //if idx has hit 0 and overflowed
-					partial_r = {remainder - divisor};
+				partial_q[31:0] = {quotient[30:0], 1'b1}; //shift
+				if(idx >= 32'b100000) begin 
+					partial_r = remdiv;
 				end else begin
-					partial_r = {remainder - divisor, dividend[idx]};
+					partial_r = {remdiv, dividend[idx]};
 				end
 			end
 			
-			idx2 = idx - 1'b1;
+			idx2 = idx - 32'b1;
 			
 		end
 		
 		done: begin
-			idx2 = 6'b011111; //reset intermediate values
+			idx2 = 32'b011111; //reset intermediate values
 			partial_q = 0;
 			partial_r = 0;
+			remdiv = 32'd0;
 			fin = 1'b1;
 		end
 		
@@ -96,7 +100,7 @@ begin : next_state_logic
 		end
 		
 		div: begin
-			if(idx == 6'b100000) begin
+			if(idx == -32'd1) begin
 				next_state = done;
 			end else begin
 				next_state = div;
@@ -138,12 +142,12 @@ module divider(
 	
 	input mex_funct3_t op,
 
-	input start,
-	output fin,
-	input [31:0] dividend,
-	input [31:0] divisor,
-	output [31:0] quotient,
-	output [31:0] remainder
+	input logic start,
+	output logic fin,
+	input logic [31:0] dividend,
+	input logic [31:0] divisor,
+	output logic [31:0] quotient,
+	output logic [31:0] remainder
 );
 
 logic [31:0] num;
