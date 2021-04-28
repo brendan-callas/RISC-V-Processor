@@ -243,40 +243,40 @@ begin : next_state_logic
 			
 			s_wait_for_ewb: begin
 				if(state != s_wait_for_ewb) begin
-					num_ewb_writebacks <= num_ewb_writebacks + 1;
+//					num_ewb_writebacks <= num_ewb_writebacks + 1;
 				end
-				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
+//				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
 			end
 			
 			s_write_back_to_ewb: begin
-				num_l2_writebacks <= num_l2_writebacks + 1;
+//				num_l2_writebacks <= num_l2_writebacks + 1;
 			end
 			
 			s_load_data_from_mem: begin
 				if(state != s_load_data_from_mem) begin
-					num_l2_misses <= num_l2_misses + 1;
-					num_ewb_misses <= num_ewb_misses + 1;
+//					num_l2_misses <= num_l2_misses + 1;
+//					num_ewb_misses <= num_ewb_misses + 1;
 				end
 			end
 			
 			s_respond_to_cpu: begin
 				if(state == s_idle) begin
 					if(cache_hit) begin
-						num_l2_hits <= num_l2_hits + 1;
-						num_ewb_misses <= num_ewb_misses + 1;
+//						num_l2_hits <= num_l2_hits + 1;
+//						num_ewb_misses <= num_ewb_misses + 1;
 					end
 					if(ewb_hit) begin
-						num_ewb_hits <= num_ewb_hits + 1;
-						num_l2_misses <= num_l2_misses + 1;
+//						num_ewb_hits <= num_ewb_hits + 1;
+//						num_l2_misses <= num_l2_misses + 1;
 					end
 				end
 			end
 			
 			s_counter_done: begin
 				if(state != s_counter_done) begin
-					num_ewb_writebacks <= num_ewb_writebacks + 1;
+//					num_ewb_writebacks <= num_ewb_writebacks + 1;
 				end
-				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
+//				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
 			end
 			
 		endcase
