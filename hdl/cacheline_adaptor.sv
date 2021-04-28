@@ -27,7 +27,7 @@ logic [1:0] buffer_idx;
 logic [1:0] buffer_idx_next;
 logic [63:0] burst_o_in;
 logic [1:0] buffer_idx_w;
-logic [31:0] stored_addr;
+logic [31:0] address;
 logic load_buffer;
 
 enum int unsigned {
@@ -42,7 +42,7 @@ enum int unsigned {
 
 function void set_defaults();
 	resp_o = 1'b0;
-	address_o = address_i;
+	address_o = address;
 	read_o = 1'b0;
 	write_o = 1'b0;
 	load_buffer = 1'b0;
@@ -56,10 +56,15 @@ function void set_defaults();
 	burst_o_in = burst_o;
 endfunction
 
+always_ff  @(posedge clk) begin
+	address <= address_i;
+end
+
 always_comb
 begin : state_actions
     /* Default output assignments */
     set_defaults();
+	
 	
     /* Actions for each state */
 	case(state)

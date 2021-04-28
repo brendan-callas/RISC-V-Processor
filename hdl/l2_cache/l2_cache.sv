@@ -15,7 +15,7 @@ module l2_cache #(
 	input clk,
 	input rst,
 	
-	// port to L2
+	// port to L1
 	output logic mem_resp,
     output logic [255:0] mem_rdata,
     input logic mem_read,
@@ -34,7 +34,9 @@ module l2_cache #(
 	
 );
 
+
 //******Internal Signals*****************//
+
 
 //needed for autograder
 
@@ -48,6 +50,7 @@ logic resp_from_mem;
 
 
 always_comb begin
+
 	resp_from_mem = pmem_resp;
 	data_from_mem = pmem_rdata;
 	// pmem_wdata = cacheline_data_out; this now comes from EWB
@@ -55,8 +58,10 @@ always_comb begin
 	pmem_write = write_to_mem;
 	//pmem_address = address_to_mem; this now comes from a mux selecting between cache addr and EWB addr
 	
-	mem_rdata = cacheline_data_out;
+	//mem_rdata = cacheline_data_out; selected by mux now
 end
+
+
 
 
 
@@ -78,6 +83,12 @@ logic [2:0] plru_idx;
 logic load_ewb;
 logic evict_addr_sel;
 logic [31:0] evict_address_to_mem;
+logic ewb_full;
+logic ewb_hit;
+logic empty_ewb;
+logic ewb_wdata_sel;
+logic [255:0] ewb_data_in;
+logic [31:0] ewb_addr_in;
 
 
 l2_cache_control cache_control(.*);
@@ -89,21 +100,50 @@ eviction_write_buffer EWB(
 	.rst(rst),
 	
 	.load(load_ewb),
-	.wdata_i(cacheline_data_out),
-	.address_i(address_to_mem),
+	.hit_addr(mem_address),
+	
+	.wdata_i(ewb_data_in),
+	.address_i(ewb_addr_in),
+	.empty(empty_ewb),
 	
 	.wdata_o(pmem_wdata),
-	.address_o(evict_address_to_mem)
+	.address_o(evict_address_to_mem),
+	.full_o(ewb_full),
+	.hit_o(ewb_hit)
 );
 
 
-// Mux to select between Cache Addr and EWB Addr
+
 always_comb begin
 	
+	// Mux to select between Cache Addr and EWB Addr
 	unique case(evict_addr_sel)
 		1'b0: pmem_address = address_to_mem;
 		1'b1: pmem_address = evict_address_to_mem;
 		default: pmem_address = address_to_mem;
+	endcase
+	
+	// Mux to select rdata going back to L1 (from L2 or from EWB)
+	unique case(ewb_hit)
+		1'b0: mem_rdata = cacheline_data_out;
+		1'b1: mem_rdata = pmem_wdata; // if EWB hit, get data out of EWB
+		default: mem_rdata = cacheline_data_out;
+	endcase
+	
+	//Mux for data into EWB
+	unique case(ewb_wdata_sel)
+		1'b0: begin
+			ewb_data_in = cacheline_data_out;
+			ewb_addr_in = address_to_mem;
+		end
+		1'b1: begin
+			ewb_data_in = mem_wdata256;
+			ewb_addr_in = mem_address;
+		end
+		default: begin
+			ewb_data_in = cacheline_data_out;
+			ewb_addr_in = address_to_mem;
+		end
 	endcase
 end
  
