@@ -6,7 +6,7 @@ DEFAULT_TARGET=$ECE411DIR/simulation/modelsim/memory.lst
 ASSEMBLER=/class/ece411/software/riscv-tools/bin/riscv32-unknown-elf-gcc
 OBJCOPY=/class/ece411/software/riscv-tools/bin/riscv32-unknown-elf-objcopy
 OBJDUMP=/class/ece411/software/riscv-tools/bin/riscv32-unknown-elf-objdump
-ADDRESSABILITY=1
+ADDRESSABILITY=32
 
 # Command line parameters
 ASM_FILE=$1
