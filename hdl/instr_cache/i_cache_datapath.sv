@@ -39,10 +39,8 @@ module i_cache_datapath #(
 	input logic load_lru,
 	// input logic read_cache_data,
 	// input logic load_dirty,
-	input logic load_prefetch_buffer,
 	// input logic dirty_sel,
 
-	output logic instr_line_hit,
 	// output logic dirty_o,
 	output logic lru_out,
 	
@@ -55,10 +53,11 @@ module i_cache_datapath #(
 	input logic busy_load_sel,
 	input logic busy_index_sel,
 	input logic busy_i,
+	input logic lru_index_sel,
 
 	output logic instr_line_hit,
 	output logic obl_line_hit,
-	output logic obl_lru_out,
+	output logic obl_lru_out
 );
 
 // Internal Signals
@@ -89,12 +88,34 @@ logic valid1;
 logic comparator0_o;
 logic comparator1_o;
 
-// new signals
+// new internal signals
 logic [31:0] obl_address;
 logic [2:0] obl_set;
 logic [23:0] obl_addr_tag;
 
+logic [26:0] prefetch_line;
 
+logic [2:0] index_i;
+logic [23:0] tag_i;
+logic [2:0] lru_index;
+logic [2:0] busy_index;
+
+logic busy0;
+logic busy1;
+logic load_busy0;
+logic load_busy1;
+
+logic obl_tag0;
+logic obl_tag1;
+logic obl_valid0;
+logic obl_valid1;
+logic obl_busy0;
+logic obl_busy1;
+logic obl_hit0;
+logic obl_hit1;
+
+logic obl_comparator0_o;
+logic obl_comparator1_o;
 
 assign mem_addr_tag = mem_address[31:8];
 assign set = mem_address[7:5];
@@ -124,7 +145,7 @@ always_comb begin : MUXES
 	unique case (prefetch_sel)
 		//Still need to get specific 32-byte block, so use addr[31:5]; align to 32-byte blocks
 		1'b0: address_to_mem = {mem_address[31:5], 5'b0};
-		1'b1: address_to_mem = {prefetch_line, 5'b0}};
+		1'b1: address_to_mem = {prefetch_line, 5'b0};
 		default: address_to_mem = {mem_address[31:5], 5'b0};
 	endcase
 
@@ -145,7 +166,7 @@ always_comb begin : MUXES
 	endcase
 
 	// select which lru_index you want 
-	unique case (prefetch_sel)
+	unique case (lru_index_sel)
 		1'b0: lru_index = set;
 		1'b1: lru_index = prefetch_line[2:0];
 		default: lru_index = set;
@@ -234,8 +255,8 @@ always_comb begin : MUXES
 	hit0 = (comparator0_o & valid0 & ~busy0);
 	hit1 = (comparator1_o & valid1 & ~busy1);
 
-	obl_hit0 = (obl_comparator0 & obl_valid0 & ~obl_busy0);
-	obl_hit1 = (obl_comparator0 & obl_valid1 & ~obl_busy1);
+	obl_hit0 = (obl_comparator0_o & obl_valid0 & ~obl_busy0);
+	obl_hit1 = (obl_comparator1_o & obl_valid1 & ~obl_busy1);
 	
 	instr_line_hit = (hit0 | hit1);
 
@@ -362,5 +383,5 @@ comparator obl_comparator1(
 
 
 
-endmodule : cache_datapath
+endmodule : i_cache_datapath
 

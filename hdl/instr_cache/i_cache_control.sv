@@ -32,6 +32,7 @@ module i_cache_control (
 	output logic busy_load_sel,
 	output logic busy_index_sel,
 	output logic busy_i,
+	output logic lru_index_sel,
 
 	input logic instr_line_hit,
 	input logic obl_line_hit,
@@ -49,7 +50,7 @@ enum int unsigned {
     /* List of states */
 	s_idle,
 	s_load_instr_from_mem,
-	s_load_prefetch_from_mem,
+	s_load_prefetch_from_mem
 } state, next_state;
 
 function void set_defaults();
@@ -73,6 +74,7 @@ function void set_defaults();
 	busy_load_sel = 1'b0;
 	busy_index_sel = 1'b0;
 	busy_i = 1'b0;
+	lru_index_sel = 1'b0;
 endfunction
 
 function void respond_to_cpu();
@@ -81,7 +83,8 @@ function void respond_to_cpu();
 	load_lru = 1'b1; // lru will load way_sel into the respective index
 endfunction
 
-function void change_busy_status(input logic is_busy_i)
+function void change_busy_status(input logic is_busy_i);
+
 	load_busy = 1'b1;
 	if (is_busy_i) begin
 		// mark 'busy'
@@ -135,17 +138,19 @@ begin : state_actions
 			// read from memory with address_to_mem = olb_address
 			// prefetch_sel will automatically select the correct way that's lru for the prefetch line
 			prefetch_sel = 1'b1;
-			way_sel = lru_out; // we need to make sure that it overwrites the the data in the way that's lru
 			read_from_mem = 1'b1;
 
 			if (resp_from_mem == 1'b1) begin
 				load_cache = 1'b1;
+				lru_index_sel = 1'b1; // select the lru index from rpefetch line
+				way_sel = lru_out; // we need to make sure that it overwrites the the data in the way that's lru
 
 				// unmark the previously busy line
 				change_busy_status(1'b0);
 			end
 			else if (mem_read & instr_line_hit) begin
 				// respond to cpu
+				lru_index_sel = 1'b0;
 				respond_to_cpu();
 			end
 		end
@@ -201,5 +206,5 @@ begin: next_state_assignment
 end
 
 
-endmodule : cache_control
+endmodule : i_cache_control
 

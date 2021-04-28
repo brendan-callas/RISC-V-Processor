@@ -24,7 +24,7 @@ module i_way
 
 	output logic [23:0] obl_tag_o,
 	output logic obl_valid_o,
-	output logic obl_busy_o,
+	output logic obl_busy_o
     
 );
 
@@ -69,25 +69,4 @@ data_array data_array(
 	.dataout(data_o)
 );
 
-endmodule : way
-
-//********** Comparator ************//
-module comparator #(
-    parameter width = 24
-)
-(
-    input logic [width-1:0] a,
-	input logic [width-1:0] b,
-	output logic f
-);
-
-always_comb begin
-
-	if(a == b) begin
-		f = 1'b1;
-	end
-	else f = 1'b0;
-	
-end
-
-endmodule : comparator
+endmodule : i_way

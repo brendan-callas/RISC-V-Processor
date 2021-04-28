@@ -43,4 +43,4 @@ always_comb begin
     obl_dataout = data[index+1];
 end
 
-endmodule : reg_array
+endmodule : i_reg_array

@@ -81,21 +81,22 @@ logic hit1;
 // logic dirty_sel;
 
 // new signals between datapath and control
-logic prefetch_sel,
-logic load_prefetch_buffer,
-logic load_busy,
-logic busy_load_sel,
-logic busy_index_sel,
-logic busy_i,
+logic prefetch_sel;
+logic load_prefetch_buffer;
+logic load_busy;
+logic busy_load_sel;
+logic busy_index_sel;
+logic busy_i;
+logic lru_index_sel;
 
-logic instr_line_hit,
-logic obl_line_hit,
-logic obl_lru_out,
+logic instr_line_hit;
+logic obl_line_hit;
+logic obl_lru_out;
 
 // bus adaptor signals
-logic mem_write,
-logic [3:0] mem_byte_enable,
-rv32i_word mem_wdata,
+logic mem_write;
+logic [3:0] mem_byte_enable;
+rv32i_word mem_wdata;
 
 logic [255:0] mem_wdata256;
 logic [255:0] mem_rdata256;
@@ -120,5 +121,5 @@ bus_adapter bus_adapter
     .address(mem_address)
 );
 
-endmodule : cache
+endmodule : i_cache
 
