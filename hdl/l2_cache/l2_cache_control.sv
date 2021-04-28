@@ -39,10 +39,18 @@ module l2_cache_control (
 	output logic write_to_mem
 );
 
+logic [9:0] ewb_counter;
+logic [9:0] ewb_counter_i;
+
 // performance counters
-int num_hits;
-int num_misses;
-int num_writebacks;
+int num_l2_hits;
+int num_l2_misses;
+int num_l2_writebacks;
+
+int num_ewb_hits;
+int num_ewb_misses;
+int num_ewb_writebacks;
+int num_ewb_cycles_saved;
 
 
 
@@ -52,7 +60,8 @@ enum int unsigned {
 	s_wait_for_ewb,
 	s_write_back_to_ewb,
 	s_load_data_from_mem,
-	s_respond_to_cpu
+	s_respond_to_cpu,
+	s_counter_done
 	
 } state, next_state;
 
@@ -73,6 +82,7 @@ function void set_defaults();
 	evict_addr_sel = 1'b0; // L2 Addr
 	empty_ewb = 1'b0;
 	ewb_wdata_sel = 1'b0; //cacheline data from L2
+	ewb_counter_i = ewb_counter + 10'b1;
 endfunction
 
 always_comb
@@ -92,12 +102,14 @@ begin : state_actions
 			evict_addr_sel = 1'b1;
 			if(resp_from_mem)
 				empty_ewb = 1'b1;
+			ewb_counter_i = 'b0;
 		end
 		
 		s_write_back_to_ewb: begin
 			way_sel = plru_idx;
 			tag_sel = 1'b0; // tag related to cacheline data
 			load_ewb = 1'b1;
+			ewb_counter_i = 'b0;
 		end
 		
 		s_load_data_from_mem: begin
@@ -120,6 +132,7 @@ begin : state_actions
 			if(ewb_hit) begin
 				ewb_wdata_sel = 1'b1; //wdata from L1
 				load_ewb = mem_write;
+				ewb_counter_i = 'b0;
 			end
 			else begin
 				load_cache = mem_write; // want to load cache if we are writing;
@@ -128,6 +141,15 @@ begin : state_actions
 			end
 			
 			
+		end
+		
+		// same control signals as wait_for_ewb
+		s_counter_done: begin
+			write_to_mem = 1'b1;
+			evict_addr_sel = 1'b1;
+			ewb_counter_i = 'b0;
+			if(resp_from_mem)
+				empty_ewb = 1'b1;
 		end
 		
 	endcase
@@ -148,12 +170,17 @@ begin : next_state_logic
 		next_state = s_idle;
 	 end
 	 
+	 
+	 
 	 else begin
 	 
 		 case(state)
 		
 			s_idle: begin
-				if( (mem_read | mem_write) & ~(cache_hit | ewb_hit) & dirty_o) begin
+				if( (mem_read | mem_write) & (cache_hit | ewb_hit) ) begin
+					next_state = s_respond_to_cpu;
+				end
+				else if( (mem_read | mem_write) & ~(cache_hit | ewb_hit) & dirty_o) begin
 				
 					if(ewb_full)
 						next_state = s_wait_for_ewb;
@@ -164,10 +191,10 @@ begin : next_state_logic
 				else if( (mem_read | mem_write) & ~(cache_hit | ewb_hit) & ~dirty_o) begin
 					next_state = s_load_data_from_mem;
 				end
+				else if( (ewb_counter >= 8'd200) & ewb_full)
+					next_state = s_counter_done;
 				
-				if( (mem_read | mem_write) & (cache_hit | ewb_hit) ) begin
-					next_state = s_respond_to_cpu;
-				end
+				
 			end
 			
 			s_wait_for_ewb: begin
@@ -189,6 +216,69 @@ begin : next_state_logic
 				next_state = s_idle;
 			end
 			
+			s_counter_done: begin
+				if(resp_from_mem == 1'b1) begin
+					next_state = s_idle;
+				end
+			end
+			
+		endcase
+		
+	//int num_l2_hits;
+	 //int num_l2_misses;
+	 //int num_l2_writebacks;
+ 
+	 //int num_ewb_hits;
+	 //int num_ewb_misses;
+	 //int num_ewb_writebacks;
+	 //int num_ewb_cycles_saved;
+		
+		// Performance Counters
+		case(next_state)
+		
+			s_idle: begin
+				
+				
+			end
+			
+			s_wait_for_ewb: begin
+				if(state != s_wait_for_ewb) begin
+					num_ewb_writebacks <= num_ewb_writebacks + 1;
+				end
+				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
+			end
+			
+			s_write_back_to_ewb: begin
+				num_l2_writebacks <= num_l2_writebacks + 1;
+			end
+			
+			s_load_data_from_mem: begin
+				if(state != s_load_data_from_mem) begin
+					num_l2_misses <= num_l2_misses + 1;
+					num_ewb_misses <= num_ewb_misses + 1;
+				end
+			end
+			
+			s_respond_to_cpu: begin
+				if(state == s_idle) begin
+					if(cache_hit) begin
+						num_l2_hits <= num_l2_hits + 1;
+						num_ewb_misses <= num_ewb_misses + 1;
+					end
+					if(ewb_hit) begin
+						num_ewb_hits <= num_ewb_hits + 1;
+						num_l2_misses <= num_l2_misses + 1;
+					end
+				end
+			end
+			
+			s_counter_done: begin
+				if(state != s_counter_done) begin
+					num_ewb_writebacks <= num_ewb_writebacks + 1;
+				end
+				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
+			end
+			
 		endcase
 	end
 end
@@ -199,6 +289,8 @@ always_ff @(posedge clk)
 begin: next_state_assignment
     /* Assignment of next state on clock edge */
 	state <= next_state;
+	
+	ewb_counter <= ewb_counter_i;
 end
 
 
