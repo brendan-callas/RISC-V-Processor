@@ -189,6 +189,11 @@ always_comb begin
 					aluop = alu_ops'(funct3);
 				end
 			endcase
+			
+			if(funct7 == 7'b0000001) begin //if muldiv
+				regfilemux_sel = regfilemux::alu_out;
+			end
+			
 		end
 		
 		op_csr: begin
