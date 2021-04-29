@@ -361,25 +361,14 @@ divider divider(
 
 //Decide whether to run mult or div
 always_comb begin
-
-	mult_go = 1'b0;
-	div_go = 1'b0;
 	
-	if(instruction_decoded_id_ex.opcode == op_reg) begin
-		if(instruction_decoded_id_ex.funct7 == 7'b0000001) begin
-			if((mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mul) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulh) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulhu) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulhsu)) begin
-				mult_go = 1'b1;
-			end
-		end
-	end
+	mult_go = (instruction_decoded_id_ex.opcode == op_reg) & 
+				(instruction_decoded_id_ex.funct7 == 7'b0000001) &
+				((mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mul) | (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulh) | (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulhu) | (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == mulhsu));
 	
-	if(instruction_decoded_id_ex.opcode == op_reg) begin
-		if(instruction_decoded_id_ex.funct7 == 7'b0000001) begin
-			if((mex_funct3_t ' (instruction_decoded_id_ex.funct3) == div) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == divu) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == rem) || (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == remu)) begin
-				div_go = 1'b1;
-			end
-		end
-	end
+	div_go = (instruction_decoded_id_ex.opcode == op_reg) & 
+				(instruction_decoded_id_ex.funct7 == 7'b0000001) &
+				((mex_funct3_t ' (instruction_decoded_id_ex.funct3) == div) | (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == divu) | (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == rem) | (mex_funct3_t ' (instruction_decoded_id_ex.funct3) == remu));
 end
 
 // Mux Selects

@@ -174,7 +174,6 @@ always_comb begin
 	num = 32'd1;
 	den = 32'd1;
 
-	if(~((dividend == -32'd2147483648 && divisor == -32'd1) && (op == div || op == rem)) && (divisor != 32'd0)) begin //check for overflow/dbz
 		case(op) //div and rem are the same, as are divu and remu
 		
 			div: begin
@@ -254,59 +253,10 @@ always_comb begin
 			end
 		
 		endcase
-	end else if(divisor == 0) begin //dbz
-		case(op) 
 		
-			div: begin
-				quotient = -32'd1;
-				remainder = dividend;
-			end
-			
-			
-			rem: begin
-				quotient = -32'd1;
-				remainder = dividend;
-			end
-			
-			
-			divu: begin
-				quotient = 32'd4294967295;
-				remainder = dividend;
-			end
-			
-			
-			remu: begin
-				quotient = 32'd4294967295;
-				remainder = dividend;
-			end
-			
-			default: begin //assume unsigned just in case
-				quotient = 32'd4294967295;
-				remainder = dividend;
-			end
-		
-		endcase
-	end else begin //overflow
-		case(op)
-		
-			div: begin
-				quotient = -32'd2147483648;
-				remainder = 0;
-			end
-			
-			
-			rem: begin
-				quotient = -32'd2147483648;
-				remainder = 0;
-			end
-			
-			
-			default: begin 
-				quotient = -32'd2147483648;
-				remainder = 0;
-			end
-		
-		endcase
+	if(dividend == -32'd2147483648 && divisor == -32'd1) begin
+		quotient = dividend;
+		remainder = 32'd0;
 	end
 end
 

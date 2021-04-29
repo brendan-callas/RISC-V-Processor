@@ -12,7 +12,7 @@ module us_multiplier(
 	
 );
 
-logic [31:0] partial_plier;
+logic [63:0] partial_plier;
 logic [31:0] partial_plicand;
 logic [63:0] partial_p;
 logic [5:0] idx;
@@ -36,7 +36,8 @@ begin : state_actions
 			fin = 1'b0;
 			idx2 = 6'b100000;
 			partial_p = 64'b0;
-			partial_plier = multiplier;
+			partial_plier = 64'b0;
+			partial_plier[31:0] = multiplier;
 			partial_plicand = multiplicand;
 		end
 		
@@ -60,7 +61,7 @@ begin : state_actions
 		done: begin
 			idx2 = 6'b100000; //reset intermediate values
 			partial_p = 64'b0;
-			partial_plier = 32'b0;
+			partial_plier = 64'b0;
 			partial_plicand = 32'b0;
 			fin = 1'b1;
 		end
@@ -69,7 +70,8 @@ begin : state_actions
 			fin = 1'b0;
 			idx2 = 6'b100000;
 			partial_p = 64'b0;
-			partial_plier = multiplier;
+			partial_plier = 64'b0;
+			partial_plier[31:0] = multiplier;
 			partial_plicand = multiplicand;
 		end
 		
