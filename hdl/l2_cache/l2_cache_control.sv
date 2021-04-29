@@ -52,6 +52,15 @@ int num_ewb_misses;
 int num_ewb_writebacks;
 int num_ewb_cycles_saved;
 
+int num_l2_hits_i;
+int num_l2_misses_i;
+int num_l2_writebacks_i;
+
+int num_ewb_hits_i;
+int num_ewb_misses_i;
+int num_ewb_writebacks_i;
+int num_ewb_cycles_saved_i;
+
 
 
 enum int unsigned {
@@ -166,6 +175,15 @@ begin : next_state_logic
 	 // default
 	 next_state = state;
 	 
+	 num_l2_hits_i = num_l2_hits;
+	 num_l2_misses_i = num_l2_misses;
+	 num_l2_writebacks_i = num_l2_writebacks;
+ 
+	 num_ewb_hits_i = num_ewb_hits;
+	 num_ewb_misses_i = num_ewb_misses;
+	 num_ewb_writebacks_i = num_ewb_writebacks;
+	 num_ewb_cycles_saved_i = num_ewb_cycles_saved;
+	 
 	 if(rst == 1'b1) begin
 		next_state = s_idle;
 	 end
@@ -224,16 +242,11 @@ begin : next_state_logic
 			
 		endcase
 		
-	//int num_l2_hits;
-	 //int num_l2_misses;
-	 //int num_l2_writebacks;
- 
-	 //int num_ewb_hits;
-	 //int num_ewb_misses;
-	 //int num_ewb_writebacks;
-	 //int num_ewb_cycles_saved;
+		
 		
 		// Performance Counters
+		
+		
 		case(next_state)
 		
 			s_idle: begin
@@ -243,43 +256,73 @@ begin : next_state_logic
 			
 			s_wait_for_ewb: begin
 				if(state != s_wait_for_ewb) begin
-//					num_ewb_writebacks <= num_ewb_writebacks + 1;
+					num_ewb_writebacks_i = num_ewb_writebacks + 1;
 				end
-//				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
+				num_ewb_cycles_saved_i = num_ewb_cycles_saved + 1;
 			end
 			
 			s_write_back_to_ewb: begin
-//				num_l2_writebacks <= num_l2_writebacks + 1;
+				num_l2_writebacks_i = num_l2_writebacks + 1;
 			end
 			
 			s_load_data_from_mem: begin
 				if(state != s_load_data_from_mem) begin
-//					num_l2_misses <= num_l2_misses + 1;
-//					num_ewb_misses <= num_ewb_misses + 1;
+					num_l2_misses_i = num_l2_misses + 1;
+					num_ewb_misses_i = num_ewb_misses + 1;
 				end
 			end
 			
 			s_respond_to_cpu: begin
 				if(state == s_idle) begin
 					if(cache_hit) begin
-//						num_l2_hits <= num_l2_hits + 1;
-//						num_ewb_misses <= num_ewb_misses + 1;
+						num_l2_hits_i = num_l2_hits + 1;
+						num_ewb_misses_i = num_ewb_misses + 1;
 					end
 					if(ewb_hit) begin
-//						num_ewb_hits <= num_ewb_hits + 1;
-//						num_l2_misses <= num_l2_misses + 1;
+						num_ewb_hits_i = num_ewb_hits + 1;
+						num_l2_misses_i = num_l2_misses + 1;
 					end
 				end
 			end
 			
 			s_counter_done: begin
 				if(state != s_counter_done) begin
-//					num_ewb_writebacks <= num_ewb_writebacks + 1;
+					num_ewb_writebacks_i = num_ewb_writebacks + 1;
 				end
-//				num_ewb_cycles_saved <= num_ewb_cycles_saved + 1;
+				num_ewb_cycles_saved_i = num_ewb_cycles_saved + 1;
 			end
 			
 		endcase
+		
+	end
+end
+
+always_ff @(posedge clk)
+begin
+	
+	if(rst) begin
+		num_l2_hits <= '0;
+		num_l2_misses <= '0;
+		num_l2_writebacks <= '0;
+
+		num_ewb_hits <= '0;
+		num_ewb_misses <= '0;
+		num_ewb_writebacks <= '0;
+		num_ewb_cycles_saved <= '0;
+	
+	end
+	else begin
+		num_l2_hits <= num_l2_hits_i;
+		num_l2_misses <= num_l2_misses_i;
+		num_l2_writebacks <= num_l2_writebacks_i;
+
+		num_ewb_hits <= num_ewb_hits_i;
+		num_ewb_misses <= num_ewb_misses_i;
+		num_ewb_writebacks <= num_ewb_writebacks_i;
+		num_ewb_cycles_saved <= num_ewb_cycles_saved_i;
+		
+		
+			
 	end
 end
 
