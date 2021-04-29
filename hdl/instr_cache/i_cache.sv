@@ -30,14 +30,17 @@ module i_cache #(
     output logic [31:0] pmem_address,
     output logic pmem_read,
     output logic pmem_write,
-    input logic pmem_resp
+    input logic pmem_resp,
 	//output logic [255:0] cacheline_data_out,
     //input logic [255:0] data_from_mem,
     //output logic [31:0] address_to_mem,
     //output logic read_from_mem,
     //output logic write_to_mem,
     //input logic resp_from_mem
-	
+
+    // inputs for performance counters
+    input logic data_request,
+    input logic arbiter_instr_state
 	
 );
 

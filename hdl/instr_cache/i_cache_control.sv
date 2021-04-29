@@ -41,10 +41,28 @@ module i_cache_control (
 	//port to memory
 	input logic resp_from_mem,
 	// output logic write_to_mem,
-	output logic read_from_mem
+	output logic read_from_mem,
 	
+	// inputs for performance counters
+    input logic data_request,
+    input logic arbiter_instr_state
 );
 
+// performance counters
+/*
+- num cycles spent prefetching when data request needs to be fulfilled
+- num instruction hits in the prefetch state
+- num instruction hits in idle state
+- num instruction misses
+*/
+
+int num_cycles_wasted_prefetching;
+int num_instr_hits_prefetch;
+int num_instr_misses;
+
+int num_cycles_wasted_prefetching_i;
+int num_instr_hits_prefetch_i;
+int num_instr_misses_i;
 
 enum int unsigned {
     /* List of states */
@@ -197,7 +215,54 @@ begin : next_state_logic
 	end
 end
 
+always_comb 
+begin : calculate_performance_counters
 
+	num_cycles_wasted_prefetching_i = num_cycles_wasted_prefetching;
+	num_instr_hits_prefetch_i = num_instr_hits_prefetch;
+	num_instr_misses_i = num_instr_misses;
+
+	case (state)
+		s_idle: begin
+			if (~instr_line_hit) begin
+				num_instr_misses_i = num_instr_misses+1;
+			end
+		end
+
+		s_load_instr_from_mem: begin
+			
+		end
+
+		s_load_prefetch_from_mem: begin
+			if (instr_line_hit) begin
+				num_instr_hits_prefetch_i = num_instr_hits_prefetch+1;
+			end
+			// add if condition for num_cycles_wasted_prefetching
+			if (data_request & arbiter_instr_state) begin
+				num_cycles_wasted_prefetching_i = num_cycles_wasted_prefetching+1;
+			end
+		end
+	endcase
+
+end
+
+/* update performance counters*/
+
+always_ff @(posedge clk)
+begin : update_performance_counters
+
+	if (rst) begin
+		num_cycles_wasted_prefetching <= '0;
+		num_instr_hits_prefetch <= '0;
+		num_instr_misses <= '0;
+	end
+	else begin
+		num_cycles_wasted_prefetching <= num_cycles_wasted_prefetching_i;
+		num_instr_hits_prefetch <= num_instr_hits_prefetch_i;
+		num_instr_misses <= num_instr_misses_i;
+	end
+
+end
 
 always_ff @(posedge clk)
 begin: next_state_assignment

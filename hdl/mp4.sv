@@ -61,6 +61,9 @@ logic read_from_mem;
 logic write_to_mem;
 logic resp_from_mem;
 
+// for i cache prefetching performance counter
+logic arbiter_instr_state;
+
 	
 datapath datapath(
 
@@ -112,7 +115,11 @@ cache_arbiter cache_arbiter
 	.mem_read(read_from_l2),
 	.mem_write(write_to_l2),
 	.mem_wdata(wdata_to_l2),
-	.mem_address(address_to_l2)
+	.mem_address(address_to_l2),
+
+  //output to i cache for performance counter
+  .in_instr_state(arbiter_instr_state)
+
 );
 
 
@@ -183,7 +190,11 @@ i_cache inst_cache (
   .mem_address(inst_addr),
 //  .mem_wdata(32'b0),
   .mem_resp(inst_resp),
-  .mem_rdata(inst_rdata)
+  .mem_rdata(inst_rdata),
+
+  // for performance counters prefetching
+  .data_request(data_read & data_write),
+  .arbiter_instr_state(arbiter_instr_state)
 );
 
 //cache inst_cache (
