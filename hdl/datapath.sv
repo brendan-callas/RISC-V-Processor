@@ -576,7 +576,7 @@ always_comb begin : MUXES
 		regfilemux::alu_out: ex_mem_forwarded_out = alu_out_ex_mem;
 		regfilemux::br_en: ex_mem_forwarded_out = br_en_ex_mem;
 		regfilemux::u_imm: ex_mem_forwarded_out = instruction_decoded_ex_mem.u_imm;
-		regfilemux::lw: ex_mem_forwarded_out = data_mem_rdata;
+		regfilemux::lw: ex_mem_forwarded_out = '0;
 		regfilemux::pc_plus4: ex_mem_forwarded_out = pc_ex_mem + 4;
 		regfilemux::lb: ex_mem_forwarded_out = lb_ex_mem;
 		regfilemux::lbu: ex_mem_forwarded_out = lbu_ex_mem;

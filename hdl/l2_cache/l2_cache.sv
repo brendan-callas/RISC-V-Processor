@@ -35,6 +35,41 @@ module l2_cache #(
 );
 
 
+/*
+logic mem_read_st;
+logic mem_write_st;
+logic [31:0] mem_address_st;
+logic [255:0] mem_wdata256_st;
+
+logic mem_read;
+logic mem_write;
+logic [31:0] mem_address;
+logic [255:0] mem_wdata256;
+
+
+
+always_ff @(posedge clk) begin
+
+	mem_address_st <= mem_address_i;
+	mem_wdata256_st <= mem_wdata256_i;
+
+	if(mem_read_i | mem_write_i) begin
+		mem_read_st <= mem_read_i;
+		mem_write_st <= mem_write_i;
+		
+	end
+
+end
+
+always_comb begin
+	mem_read = mem_read_st;
+	mem_write = mem_write_st;
+	mem_address = mem_address_st;
+	mem_wdata256 = mem_wdata256_st;
+end
+*/
+
+
 //******Internal Signals*****************//
 
 
