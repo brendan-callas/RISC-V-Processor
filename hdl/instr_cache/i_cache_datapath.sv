@@ -57,7 +57,10 @@ module i_cache_datapath #(
 
 	output logic instr_line_hit,
 	output logic obl_line_hit,
-	output logic obl_lru_out
+	output logic obl_lru_out,
+
+	// inputs / outputs prefetched array (performance counters)
+	output logic prefetched
 );
 
 // Internal Signals
@@ -381,6 +384,24 @@ comparator obl_comparator1(
 	.f(obl_comparator1_o)
 );
 
+
+reg_array was_prefetched0(
+	.clk(clk),
+	.rst(rst),
+	.load(load_cache & ~way_sel),
+	.index(index_i),
+	.datain(prefetch_sel),
+	.dataout(prefetched)
+);
+
+reg_array was_prefetched1(
+	.clk(clk),
+	.rst(rst),
+	.load(load_cache & way_sel),
+	.index(index_i),
+	.datain(prefetch_sel),
+	.dataout(prefetched)
+);
 
 
 endmodule : i_cache_datapath

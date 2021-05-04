@@ -40,7 +40,8 @@ module i_cache #(
 
     // inputs for performance counters
     input logic data_request,
-    input logic arbiter_instr_state
+    input logic arbiter_instr_state,
+    input logic data_resp
 	
 );
 
@@ -104,6 +105,9 @@ rv32i_word mem_wdata;
 logic [255:0] mem_wdata256;
 logic [255:0] mem_rdata256;
 logic [31:0] mem_byte_enable256;
+
+// signal for 'prefetched'
+logic prefetched;
 
 assign mem_write = 1'b1;
 assign mem_byte_enable = 4'b1111;

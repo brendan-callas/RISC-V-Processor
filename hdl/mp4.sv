@@ -193,8 +193,9 @@ i_cache inst_cache (
   .mem_rdata(inst_rdata),
 
   // for performance counters prefetching
-  .data_request(data_read & data_write),
-  .arbiter_instr_state(arbiter_instr_state)
+  .data_request(data_read | data_write),
+  .arbiter_instr_state(arbiter_instr_state),
+  .data_resp(data_resp)
 );
 
 //cache inst_cache (
