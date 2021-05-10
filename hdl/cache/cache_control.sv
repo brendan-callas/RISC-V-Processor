@@ -29,8 +29,23 @@ module cache_control (
 	//port to memory
 	input logic resp_from_mem,
 	output logic read_from_mem,
-	output logic write_to_mem
+	output logic write_to_mem,
+
+	// performance counters
+	input logic stall_ex_mem,
+	input logic arbiter_data_state,
+	input logic instr_resp
 );
+
+
+// performance counters
+int num_instr_hit;
+int num_instr_misses;
+int num_cycles_miss;
+
+int num_instr_hit_i;
+int num_instr_misses_i;
+int num_cycles_miss_i;
 
 
 enum int unsigned {
@@ -179,6 +194,68 @@ begin : next_state_logic
 	end
 end
 
+always_comb 
+begin : calculate_performance_counters
+
+	num_instr_hit_i = num_instr_hit;
+	num_instr_misses_i = num_instr_misses;
+	num_cycles_miss_i = num_cycles_miss;
+
+	case(state)
+		
+		s_idle: begin
+			if( (mem_read | mem_write) & ~cache_hit) begin
+				num_instr_misses_i = num_instr_misses+1;
+			end
+
+			if ((mem_read | mem_write) & cache_hit & ~stall_ex_mem) begin
+				num_instr_hit_i = num_instr_hit+1;
+			end
+		end
+		
+		s_write_back_prev: begin
+			if (~(~arbiter_data_state & ~instr_resp)) begin
+				num_cycles_miss_i = num_cycles_miss+1;
+			end
+		end
+		
+		s_write_back: begin
+			if (~(~arbiter_data_state & ~instr_resp)) begin
+				num_cycles_miss_i = num_cycles_miss+1;
+			end
+		end
+		
+		s_load_data_from_mem: begin
+			if (~(~arbiter_data_state & ~instr_resp)) begin
+				num_cycles_miss_i = num_cycles_miss+1;
+			end
+		end
+		
+		s_load_data_into_cache: begin
+		end
+		
+		s_respond_to_cpu: begin
+		end
+	endcase
+
+end
+
+/* update performance counters*/
+
+always_ff @(posedge clk)
+begin : update_performance_counters
+	if (rst) begin
+		num_instr_hit <= '0;
+		num_instr_misses <= '0;
+		num_cycles_miss <= '0;
+	end
+	else begin
+		num_instr_hit <= num_instr_hit_i;
+		num_instr_misses <= num_instr_misses_i;
+		num_cycles_miss <= num_cycles_miss_i;
+	end
+
+end
 
 
 always_ff @(posedge clk)

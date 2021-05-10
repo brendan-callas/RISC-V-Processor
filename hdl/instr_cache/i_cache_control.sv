@@ -47,7 +47,8 @@ module i_cache_control (
     input logic data_request,
     input logic arbiter_instr_state,
 	input logic prefetched,
-	input logic data_resp
+	input logic data_resp,
+	input logic stall_pc
 
 );
 
@@ -70,24 +71,16 @@ UPDATED PERFORMANCE COUNTERS:
 */
 
 
-int num_cycles_instr_hit; //
-int num_cycles_instr_hit_prefetched; //
-int num_instr_misses; //
-int num_cycles_load_instr; //
-int num_cycles_load_instr_data_req; //
-int num_cycles_load_prefetch_data_req;
-int num_cycles_instr_hit_data_req; // 
-int num_cycles_instr_hit_prefetched_data_req; //
-int num_cycles_wasted_prefetching; //
+int num_instr_hit;
+int num_instr_hit_prefetched;
+int num_instr_misses;
+int num_cycles_miss;
+int num_cycles_wasted_prefetching;
 
-int num_cycles_instr_hit_i;
-int num_cycles_instr_hit_prefetched_i;
+int num_instr_hit_i;
+int num_instr_hit_prefetched_i;
 int num_instr_misses_i;
-int num_cycles_load_instr_i;
-int num_cycles_load_instr_data_req_i;
-int num_cycles_load_prefetch_data_req_i;
-int num_cycles_instr_hit_data_req_i;
-int num_cycles_instr_hit_prefetched_data_req_i;
+int num_cycles_miss_i;
 int num_cycles_wasted_prefetching_i;
 
 enum int unsigned {
@@ -244,29 +237,17 @@ end
 always_comb 
 begin : calculate_performance_counters
 
-	num_cycles_instr_hit_i = num_cycles_instr_hit;
-	num_cycles_instr_hit_prefetched_i = num_cycles_instr_hit_prefetched;
+	num_instr_hit_i = num_instr_hit;
+	num_instr_hit_prefetched_i = num_instr_hit_prefetched;
 	num_instr_misses_i = num_instr_misses;
-	num_cycles_load_instr_i = num_cycles_load_instr;
-	num_cycles_load_instr_data_req_i = num_cycles_load_instr_data_req;
-	num_cycles_load_prefetch_data_req_i = num_cycles_load_prefetch_data_req;
-	num_cycles_instr_hit_data_req_i = num_cycles_instr_hit_data_req;
-	num_cycles_instr_hit_prefetched_data_req_i = num_cycles_instr_hit_prefetched_data_req;
-
+	num_cycles_miss_i = num_cycles_miss;
 	num_cycles_wasted_prefetching_i = num_cycles_wasted_prefetching;
 	// num_instr_hits_prefetch_i = num_instr_hits_prefetch;
 
-	if (instr_line_hit) begin
-		num_cycles_instr_hit_i = num_cycles_instr_hit+1;
-		if (prefetched) begin
-			num_cycles_instr_hit_prefetched_i = num_cycles_instr_hit_prefetched+1;
-		end
-	end
-
-	if (instr_line_hit & (data_request & ~data_resp)) begin
-		num_cycles_instr_hit_data_req_i = num_cycles_instr_hit_data_req+1;
-		if (prefetched & (data_request & ~data_resp)) begin
-			num_cycles_instr_hit_prefetched_data_req_i = num_cycles_instr_hit_prefetched_data_req+1;
+	if (instr_line_hit & ~stall_pc) begin
+		num_instr_hit_i = num_instr_hit+1;
+		if (prefetched & ~stall_pc) begin
+			num_instr_hit_prefetched_i = num_instr_hit_prefetched+1;
 		end
 	end
 
@@ -279,16 +260,12 @@ begin : calculate_performance_counters
 		end
 
 		s_load_instr_from_mem: begin
-			num_cycles_load_instr_i = num_cycles_load_instr+1;
-			if (data_request & ~arbiter_instr_state & ~data_resp) begin
-				num_cycles_load_instr_data_req_i = num_cycles_load_instr_data_req+1;
+			if (~(data_request & ~arbiter_instr_state & ~data_resp)) begin
+				num_cycles_miss_i = num_cycles_miss+1;
 			end
 		end
 
 		s_load_prefetch_from_mem: begin
-			if (data_request & ~data_resp) begin
-				num_cycles_load_prefetch_data_req_i = num_cycles_load_prefetch_data_req+1;
-			end
 			// add if condition for num_cycles_wasted_prefetching
 			if (data_request & arbiter_instr_state) begin
 				num_cycles_wasted_prefetching_i = num_cycles_wasted_prefetching+1;
@@ -304,14 +281,10 @@ always_ff @(posedge clk)
 begin : update_performance_counters
 
 	if (rst) begin
-		num_cycles_instr_hit <= '0;
-		num_cycles_instr_hit_prefetched <= '0;
+		num_instr_hit <= '0;
+		num_instr_hit_prefetched <= '0;
 		num_instr_misses <= '0;
-		num_cycles_load_instr <= '0;
-		num_cycles_load_instr_data_req <= '0;
-		num_cycles_load_prefetch_data_req <= '0;
-		num_cycles_instr_hit_data_req <= '0;
-		num_cycles_instr_hit_prefetched_data_req <= '0;
+		num_cycles_miss <= '0;
 
 		num_cycles_wasted_prefetching <= '0;
 
@@ -319,14 +292,10 @@ begin : update_performance_counters
 
 	end
 	else begin
-		num_cycles_instr_hit <= num_cycles_instr_hit_i;
-		num_cycles_instr_hit_prefetched <= num_cycles_instr_hit_prefetched_i;
+		num_instr_hit <= num_instr_hit_i;
+		num_instr_hit_prefetched <= num_instr_hit_prefetched_i;
 		num_instr_misses <= num_instr_misses_i;
-		num_cycles_load_instr <= num_cycles_load_instr_i;
-		num_cycles_load_instr_data_req <= num_cycles_load_instr_data_req_i;
-		num_cycles_load_prefetch_data_req <= num_cycles_load_prefetch_data_req_i;
-		num_cycles_instr_hit_data_req <= num_cycles_instr_hit_data_req_i;
-		num_cycles_instr_hit_prefetched_data_req <= num_cycles_instr_hit_prefetched_data_req_i;
+		num_cycles_miss <= num_cycles_miss_i;
 
 		num_cycles_wasted_prefetching <= num_cycles_wasted_prefetching_i;
 

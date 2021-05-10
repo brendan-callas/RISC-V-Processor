@@ -63,6 +63,9 @@ logic resp_from_mem;
 
 // for i cache prefetching performance counter
 logic arbiter_instr_state;
+logic arbiter_data_state;
+logic stall_pc;
+logic stall_ex_mem;
 
 	
 datapath datapath(
@@ -84,7 +87,11 @@ datapath datapath(
 	.data_mem_address(data_addr),
 	.data_mem_wdata(data_wdata),
 	.data_mem_resp(data_resp),
-	.data_mem_rdata(data_rdata)	
+	.data_mem_rdata(data_rdata),
+
+  // i_cache performance counter
+  .stall_pc(stall_pc),
+  .stall_ex_mem(stall_ex_mem)
 
 );
 
@@ -118,8 +125,8 @@ cache_arbiter cache_arbiter
 	.mem_address(address_to_l2),
 
   //output to i cache for performance counter
-  .in_instr_state(arbiter_instr_state)
-
+  .in_instr_state(arbiter_instr_state),
+  .in_data_state(arbiter_data_state)
 );
 
 
@@ -171,34 +178,7 @@ cacheline_adaptor cacheline_adaptor
     .resp_i(pmem_resp)
 );
 
-i_cache inst_cache (
-  .clk(clk),
-  .rst(rst),
-
-  /* Physical memory signals */
-  .pmem_resp(inst_resp_p),
-  .pmem_rdata(inst_rdata_p),
-  .pmem_address(inst_addr_p),
-  .pmem_wdata(inst_wdata_p), //nothing
-  .pmem_read(inst_read_p),
-  .pmem_write(inst_write_p), //nothing
-
-  /* CPU memory signals */
-  .mem_read(inst_read),
-//  .mem_write(1'b0),
-//  .mem_byte_enable(4'b1111),
-  .mem_address(inst_addr),
-//  .mem_wdata(32'b0),
-  .mem_resp(inst_resp),
-  .mem_rdata(inst_rdata),
-
-  // for performance counters prefetching
-  .data_request(data_read | data_write),
-  .arbiter_instr_state(arbiter_instr_state),
-  .data_resp(data_resp)
-);
-
-//cache inst_cache (
+//i_cache inst_cache (
 //  .clk(clk),
 //  .rst(rst),
 //
@@ -212,13 +192,47 @@ i_cache inst_cache (
 //
 //  /* CPU memory signals */
 //  .mem_read(inst_read),
-//  .mem_write(1'b0),
-//  .mem_byte_enable(4'b1111),
+////  .mem_write(1'b0),
+////  .mem_byte_enable(4'b1111),
 //  .mem_address(inst_addr),
-//  .mem_wdata(32'b0),
+////  .mem_wdata(32'b0),
 //  .mem_resp(inst_resp),
-//  .mem_rdata(inst_rdata)
+//  .mem_rdata(inst_rdata),
+//
+//  // for performance counters prefetching
+//  .data_request(data_read | data_write),
+//  .arbiter_instr_state(arbiter_instr_state),
+//  .data_resp(data_resp),
+//  .stall_pc(stall_pc)
 //);
+
+cache inst_cache (
+  .clk(clk),
+  .rst(rst),
+
+  /* Physical memory signals */
+  .pmem_resp(inst_resp_p),
+  .pmem_rdata(inst_rdata_p),
+  .pmem_address(inst_addr_p),
+  .pmem_wdata(inst_wdata_p), //nothing
+  .pmem_read(inst_read_p),
+  .pmem_write(inst_write_p), //nothing
+
+  /* CPU memory signals */
+  .mem_read(inst_read),
+  .mem_write(1'b0),
+  .mem_byte_enable(4'b1111),
+  .mem_address(inst_addr),
+  .mem_wdata(32'b0),
+  .mem_resp(inst_resp),
+  .mem_rdata(inst_rdata),
+  
+  // performance counters
+  .stall_ex_mem(stall_pc),
+  .arbiter_data_state(arbiter_instr_state),
+  .instr_resp(data_resp)
+
+);
 
 cache data_cache (
   .clk(clk),
@@ -239,7 +253,11 @@ cache data_cache (
   .mem_address(data_addr),
   .mem_wdata(data_wdata),
   .mem_resp(data_resp),
-  .mem_rdata(data_rdata)
+  .mem_rdata(data_rdata),
+
+  .stall_ex_mem(stall_ex_mem),
+  .arbiter_data_state(arbiter_data_state),
+  .instr_resp(inst_resp)
 );
 
 

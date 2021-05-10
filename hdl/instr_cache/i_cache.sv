@@ -41,7 +41,8 @@ module i_cache #(
     // inputs for performance counters
     input logic data_request,
     input logic arbiter_instr_state,
-    input logic data_resp
+    input logic data_resp,
+    input logic stall_pc
 	
 );
 

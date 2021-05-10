@@ -16,7 +16,9 @@ module datapath
     output logic [3:0] mem_byte_enable,
     output rv32i_word inst_mem_address,
 	output rv32i_word data_mem_address,
-    output rv32i_word data_mem_wdata
+    output rv32i_word data_mem_wdata,
+	output logic stall_pc,
+	output logic stall_ex_mem
 );
 
 
@@ -134,10 +136,10 @@ rv32i_word lhu_ex_mem;
 assign mem_wb_forwarded_out = regfilemux_out; // this double name is unnecessary but it helps somewhat with keeping track of signals
 
 // stall signals
-logic stall_pc;
+// logic stall_pc;
 logic stall_if_id;
 logic stall_id_ex;
-logic stall_ex_mem;
+// logic stall_ex_mem;
 logic stall_mem_wb;
 logic bubble_control;
 

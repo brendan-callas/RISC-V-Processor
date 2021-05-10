@@ -28,7 +28,8 @@ module cache_arbiter
 	output logic [31:0] mem_address,
 
 	// output for i cache prefetching performance counter
-	output logic in_instr_state
+	output logic in_instr_state,
+	output logic in_data_state
 );
 
 /* State Enumeration */
@@ -39,6 +40,7 @@ enum int unsigned {
 } state, next_states;
 
 assign in_instr_state = (state==inst_c);
+assign in_data_state = (state==data_c);
 
 /* State Control Signals */
 always_comb begin : state_actions
